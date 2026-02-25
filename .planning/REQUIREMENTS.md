@@ -7,11 +7,11 @@
 
 ### Business Hours Configuration
 
-- [ ] **BHRS-01**: Admin can set opening time (HH:MM format) in system settings
-- [ ] **BHRS-02**: Admin can set closing time (HH:MM format) in system settings
-- [ ] **BHRS-03**: Admin can add multiple custom breaks with label, start time, and end time
-- [ ] **BHRS-04**: Admin can remove any break from the list
-- [ ] **BHRS-05**: Admin can enable/disable each day of the week (Monday through Sunday)
+- [x] **BHRS-01**: Admin can set opening time (HH:MM format) in system settings
+- [x] **BHRS-02**: Admin can set closing time (HH:MM format) in system settings
+- [x] **BHRS-03**: Admin can add multiple custom breaks with label, start time, and end time
+- [x] **BHRS-04**: Admin can remove any break from the list
+- [x] **BHRS-05**: Admin can enable/disable each day of the week (Monday through Sunday)
 - [x] **BHRS-06**: System validates breaks don't overlap and fall within opening/closing range
 - [x] **BHRS-07**: System provides sensible defaults (09:00-17:00, Mon-Fri, lunch 12:00-14:00) on fresh install
 
@@ -54,11 +54,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BHRS-01 | Phase 1: Business Hours Configuration | Pending |
-| BHRS-02 | Phase 1: Business Hours Configuration | Pending |
-| BHRS-03 | Phase 1: Business Hours Configuration | Pending |
-| BHRS-04 | Phase 1: Business Hours Configuration | Pending |
-| BHRS-05 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-01 | Phase 1: Business Hours Configuration | Complete |
+| BHRS-02 | Phase 1: Business Hours Configuration | Complete |
+| BHRS-03 | Phase 1: Business Hours Configuration | Complete |
+| BHRS-04 | Phase 1: Business Hours Configuration | Complete |
+| BHRS-05 | Phase 1: Business Hours Configuration | Complete |
 | BHRS-06 | Phase 1: Business Hours Configuration | Complete |
 | BHRS-07 | Phase 1: Business Hours Configuration | Complete |
 | DCAL-01 | Phase 2: Dynamic Signing Calendar | Pending |

@@ -12,7 +12,7 @@ This milestone replaces hardcoded signing calendar behavior with admin-configura
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Business Hours Configuration** - Admin can configure working hours, days, and breaks through system settings
+- [x] **Phase 1: Business Hours Configuration** - Admin can configure working hours, days, and breaks through system settings
 - [ ] **Phase 2: Dynamic Signing Calendar** - Calendar renders time slots and days from business hours config instead of hardcoded values
 - [ ] **Phase 3: Hydration Fix** - NotificationBell no longer causes hydration mismatch errors
 
@@ -31,8 +31,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md -- Foundation: types, constants, Zod schema, and server actions for business hours config
-- [ ] 01-02-PLAN.md -- UI: BusinessHoursSection component and Horarios tab in settings page
+- [x] 01-01-PLAN.md -- Foundation: types, constants, Zod schema, and server actions for business hours config
+- [x] 01-02-PLAN.md -- UI: BusinessHoursSection component and Horarios tab in settings page
 
 ### Phase 2: Dynamic Signing Calendar
 **Goal**: The signing calendar dynamically reflects the configured business hours -- showing only enabled days, generating time slots from opening/closing times, and displaying break periods as visual separators
@@ -69,6 +69,6 @@ Phases execute in numeric order: 1 -> 2 -> 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Business Hours Configuration | 0/2 | Not started | - |
+| 1. Business Hours Configuration | 2/2 | Complete | 2026-02-25 |
 | 2. Dynamic Signing Calendar | 0/2 | Not started | - |
 | 3. Hydration Fix | 0/1 | Not started | - |
