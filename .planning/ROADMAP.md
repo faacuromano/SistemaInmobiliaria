@@ -44,11 +44,11 @@ Plans:
   3. Break periods appear as labeled separator rows in the calendar grid (e.g., "Almuerzo 12:00-14:00") replacing the old hardcoded morning/afternoon divider
   4. Existing signing appointments that fall outside the current configured hours are still visible on the calendar with an "out of hours" indicator -- they are never hidden
   5. Week navigation correctly adapts to configured days (date range queries and displayed dates match enabled days only)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md -- Utility functions (generateCalendarSegments, getEnabledWeekDates), expand getSigningsByWeek to Mon-Sun, wire businessHours into page
+- [ ] 02-02-PLAN.md -- Refactor SigningsCalendar and SigningsView for dynamic rendering with break separators, out-of-hours indicators, and adaptive week navigation
 
 ### Phase 3: Hydration Fix
 **Goal**: The NotificationBell component renders without React hydration mismatch warnings
