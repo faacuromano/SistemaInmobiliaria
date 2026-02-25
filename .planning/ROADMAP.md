@@ -28,11 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Admin can add multiple named break periods (with start time, end time, and label) and remove any individual break
   4. System rejects invalid configurations (overlapping breaks, breaks outside business hours, closing before opening) with visible error messages
   5. A fresh install with no saved configuration loads sensible defaults (09:00-17:00, Mon-Fri, lunch break 12:00-14:00) without errors
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md -- Foundation: types, constants, Zod schema, and server actions for business hours config
+- [ ] 01-02-PLAN.md -- UI: BusinessHoursSection component and Horarios tab in settings page
 
 ### Phase 2: Dynamic Signing Calendar
 **Goal**: The signing calendar dynamically reflects the configured business hours -- showing only enabled days, generating time slots from opening/closing times, and displaying break periods as visual separators
