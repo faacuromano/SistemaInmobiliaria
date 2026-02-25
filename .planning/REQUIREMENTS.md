@@ -1,4 +1,4 @@
-# Requirements: Sistema Inmobiliaria — Milestone 2
+# Requirements: Sistema Inmobiliaria -- Milestone 2
 
 **Defined:** 2026-02-25
 **Core Value:** The signing calendar must dynamically reflect the business's actual working hours and breaks, configured by administrators.
@@ -13,7 +13,7 @@
 - [ ] **BHRS-04**: Admin can remove any break from the list
 - [ ] **BHRS-05**: Admin can enable/disable each day of the week (Monday through Sunday)
 - [ ] **BHRS-06**: System validates breaks don't overlap and fall within opening/closing range
-- [ ] **BHRS-07**: System provides sensible defaults (09:00–17:00, Mon-Fri, lunch 12:00–14:00) on fresh install
+- [ ] **BHRS-07**: System provides sensible defaults (09:00-17:00, Mon-Fri, lunch 12:00-14:00) on fresh install
 
 ### Dynamic Calendar
 
@@ -54,25 +54,25 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BHRS-01 | Phase 1 | Pending |
-| BHRS-02 | Phase 1 | Pending |
-| BHRS-03 | Phase 1 | Pending |
-| BHRS-04 | Phase 1 | Pending |
-| BHRS-05 | Phase 1 | Pending |
-| BHRS-06 | Phase 1 | Pending |
-| BHRS-07 | Phase 1 | Pending |
-| DCAL-01 | Phase 2 | Pending |
-| DCAL-02 | Phase 2 | Pending |
-| DCAL-03 | Phase 2 | Pending |
-| DCAL-04 | Phase 2 | Pending |
-| DCAL-05 | Phase 2 | Pending |
-| BFIX-01 | Phase 3 | Pending |
+| BHRS-01 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-02 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-03 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-04 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-05 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-06 | Phase 1: Business Hours Configuration | Pending |
+| BHRS-07 | Phase 1: Business Hours Configuration | Pending |
+| DCAL-01 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-02 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-03 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-04 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-05 | Phase 2: Dynamic Signing Calendar | Pending |
+| BFIX-01 | Phase 3: Hydration Fix | Pending |
 
 **Coverage:**
 - v1 requirements: 13 total
 - Mapped to phases: 13
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after initial definition*
+*Last updated: 2026-02-25 after roadmap creation*
