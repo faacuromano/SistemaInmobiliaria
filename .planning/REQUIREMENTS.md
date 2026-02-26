@@ -17,15 +17,15 @@ Requirements for delivery release. Each maps to roadmap phases.
 
 ### Financial Logic Tests
 
-- [ ] **FIN-01**: `generateInstallments()` tested for collectionDay 31 clamping in Feb (28/29), Apr, Jun, Sep, Nov
-- [ ] **FIN-02**: `generateInstallments()` tested for year rollover (Dec → Jan next year)
-- [ ] **FIN-03**: `generateInstallments()` tested for variable first installment amount (`firstInstallmentAmount`)
-- [ ] **FIN-04**: `generateInstallments()` tested for zero installments (contado sale)
+- [x] **FIN-01**: `generateInstallments()` tested for collectionDay 31 clamping in Feb (28/29), Apr, Jun, Sep, Nov
+- [x] **FIN-02**: `generateInstallments()` tested for year rollover (Dec → Jan next year)
+- [x] **FIN-03**: `generateInstallments()` tested for variable first installment amount (`firstInstallmentAmount`)
+- [x] **FIN-04**: `generateInstallments()` tested for zero installments (contado sale)
 - [ ] **FIN-05**: `calculateInstallmentPreview()` parity test — same inputs produce identical outputs as `generateInstallments()`
 - [ ] **FIN-06**: `recalculateInstallments()` tested for first refuerzo — unpaid installments reduced, `originalAmount` set
 - [ ] **FIN-07**: `recalculateInstallments()` tested for second refuerzo — `originalAmount` NOT overwritten
 - [ ] **FIN-08**: `recalculateInstallments()` tested for edge case: reduction > installment amount → clamped to 0
-- [ ] **FIN-09**: Decimal precision assertions for all monetary calculations using `expectMoney` helper
+- [x] **FIN-09**: Decimal precision assertions for all monetary calculations using `expectMoney` helper
 
 ### Server Action Integration Tests
 
@@ -96,15 +96,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-03 | Phase 1 | Complete |
 | TEST-04 | Phase 1 | Complete |
 | TEST-05 | Phase 1 | Complete |
-| FIN-01 | Phase 2 | Pending |
-| FIN-02 | Phase 2 | Pending |
-| FIN-03 | Phase 2 | Pending |
-| FIN-04 | Phase 2 | Pending |
+| FIN-01 | Phase 2 | Complete |
+| FIN-02 | Phase 2 | Complete |
+| FIN-03 | Phase 2 | Complete |
+| FIN-04 | Phase 2 | Complete |
 | FIN-05 | Phase 2 | Pending |
 | FIN-06 | Phase 2 | Pending |
 | FIN-07 | Phase 2 | Pending |
 | FIN-08 | Phase 2 | Pending |
-| FIN-09 | Phase 2 | Pending |
+| FIN-09 | Phase 2 | Complete |
 | ACT-01 | Phase 3 | Pending |
 | ACT-02 | Phase 3 | Pending |
 | ACT-03 | Phase 3 | Pending |
