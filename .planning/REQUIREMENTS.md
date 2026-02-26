@@ -91,41 +91,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TEST-01 | — | Pending |
-| TEST-02 | — | Pending |
-| TEST-03 | — | Pending |
-| TEST-04 | — | Pending |
-| TEST-05 | — | Pending |
-| FIN-01 | — | Pending |
-| FIN-02 | — | Pending |
-| FIN-03 | — | Pending |
-| FIN-04 | — | Pending |
-| FIN-05 | — | Pending |
-| FIN-06 | — | Pending |
-| FIN-07 | — | Pending |
-| FIN-08 | — | Pending |
-| FIN-09 | — | Pending |
-| ACT-01 | — | Pending |
-| ACT-02 | — | Pending |
-| ACT-03 | — | Pending |
-| ACT-04 | — | Pending |
-| ACT-05 | — | Pending |
-| ACT-06 | — | Pending |
-| GRID-01 | — | Pending |
-| GRID-02 | — | Pending |
-| GRID-03 | — | Pending |
-| GRID-04 | — | Pending |
-| GRID-05 | — | Pending |
-| GRID-06 | — | Pending |
-| GATE-01 | — | Pending |
-| GATE-02 | — | Pending |
-| GATE-03 | — | Pending |
+| TEST-01 | Phase 1 | Pending |
+| TEST-02 | Phase 1 | Pending |
+| TEST-03 | Phase 1 | Pending |
+| TEST-04 | Phase 1 | Pending |
+| TEST-05 | Phase 1 | Pending |
+| FIN-01 | Phase 2 | Pending |
+| FIN-02 | Phase 2 | Pending |
+| FIN-03 | Phase 2 | Pending |
+| FIN-04 | Phase 2 | Pending |
+| FIN-05 | Phase 2 | Pending |
+| FIN-06 | Phase 2 | Pending |
+| FIN-07 | Phase 2 | Pending |
+| FIN-08 | Phase 2 | Pending |
+| FIN-09 | Phase 2 | Pending |
+| ACT-01 | Phase 3 | Pending |
+| ACT-02 | Phase 3 | Pending |
+| ACT-03 | Phase 3 | Pending |
+| ACT-04 | Phase 3 | Pending |
+| ACT-05 | Phase 3 | Pending |
+| ACT-06 | Phase 3 | Pending |
+| GRID-01 | Phase 4 | Pending |
+| GRID-02 | Phase 4 | Pending |
+| GRID-03 | Phase 4 | Pending |
+| GRID-04 | Phase 4 | Pending |
+| GRID-05 | Phase 4 | Pending |
+| GRID-06 | Phase 4 | Pending |
+| GATE-01 | Phase 4 | Pending |
+| GATE-02 | Phase 4 | Pending |
+| GATE-03 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 ⚠️
+- Mapped to phases: 29
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after initial definition*
+*Last updated: 2026-02-26 — traceability filled after roadmap creation*
