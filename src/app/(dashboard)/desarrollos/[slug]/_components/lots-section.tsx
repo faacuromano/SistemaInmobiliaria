@@ -136,7 +136,7 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:hidden">
         <h2 className="text-xl font-semibold">Lotes</h2>
         <div className="flex items-center gap-2">
           {/* View toggle */}
@@ -179,7 +179,7 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
 
       {/* Status summary bar */}
       {lots.length > 0 && (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground print:hidden">
           {STATUS_ORDER.filter((s) => statusCounts[s]).map((status) => (
             <div key={status} className="flex items-center gap-1.5">
               <span
@@ -199,7 +199,9 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
         </div>
       )}
 
-      <LotFilters />
+      <div className="print:hidden">
+        <LotFilters />
+      </div>
 
       {viewMode === "table" ? (
         <LotsTable
@@ -224,7 +226,7 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
 
           {/* Desktop detail panel */}
           {selectedLot && (
-            <div className="hidden w-72 shrink-0 md:block lg:w-80">
+            <div className="hidden w-72 shrink-0 md:block lg:w-80 print:!hidden">
               <div className="sticky top-0 h-[calc(100vh-12rem)] overflow-hidden rounded-lg border">
                 <LotDetailPanel
                   lot={selectedLot}

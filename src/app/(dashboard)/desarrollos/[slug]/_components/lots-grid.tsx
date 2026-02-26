@@ -108,6 +108,7 @@ export function LotsGrid({ lots, selectedLotId, onSelectLot }: Props) {
                   className={cn(
                     "relative flex min-h-[120px] flex-col rounded-lg border border-l-4 bg-card p-3 text-left",
                     "transition-all duration-150 cursor-pointer hover:shadow-md",
+                    "print:shadow-none print:break-inside-avoid",
                     STATUS_BORDER_COLORS[lot.status],
                     isSelected && "ring-2 ring-primary ring-offset-1 shadow-md"
                   )}
@@ -176,7 +177,7 @@ export function LotsGrid({ lots, selectedLotId, onSelectLot }: Props) {
         // When there are multiple groups, wrap in Collapsible with header
         if (hasMultipleGroups) {
           return (
-            <Collapsible defaultOpen key={group.key}>
+            <Collapsible defaultOpen key={group.key} className="print:break-inside-avoid">
               <CollapsibleTrigger className="flex w-full items-center gap-2 py-1 group cursor-pointer">
                 <h3 className="text-sm font-semibold text-foreground">
                   {group.label}
@@ -187,7 +188,7 @@ export function LotsGrid({ lots, selectedLotId, onSelectLot }: Props) {
                 <div className="h-px flex-1 bg-border" />
                 <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
-              <CollapsibleContent>
+              <CollapsibleContent className="print:!block print:!h-auto print:!overflow-visible">
                 <div className="mt-2">{gridContent}</div>
               </CollapsibleContent>
             </Collapsible>
