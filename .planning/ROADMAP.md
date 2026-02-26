@@ -42,7 +42,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `calculateInstallmentPreview()` parity test passes — identical inputs produce byte-for-byte identical output to `generateInstallments()`
   3. `recalculateInstallments()` test suite passes including the second-refuerzo guard: `originalAmount` is set on first refuerzo and NOT overwritten on second
   4. All monetary assertions in the test suite use `expectMoney` — no raw `toBe()` on calculated amounts
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 02-01-PLAN.md — Create shared fixtures and test generateInstallments (FIN-01..04, FIN-09)
+- [ ] 02-02-PLAN.md — Test preview/generator parity and recalculateInstallments (FIN-05..08, FIN-09)
 
 ### Phase 3: Integration Tests
 **Goal**: Server actions for sale creation, cancellation, and payment recording are tested end-to-end with mocked dependencies, including the partial-failure recovery path after a committed transaction
@@ -76,7 +78,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Testing Infrastructure | 0/2 | Planned | - |
-| 2. Financial Logic Tests | 0/? | Not started | - |
+| 1. Testing Infrastructure | 2/2 | Complete | 2026-02-26 |
+| 2. Financial Logic Tests | 0/2 | Planned | - |
 | 3. Integration Tests | 0/? | Not started | - |
 | 4. Delivery Gates and Lot Grid | 0/? | Not started | - |
