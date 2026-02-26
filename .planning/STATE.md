@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in-progress
-last_updated: "2026-02-26T07:07:00Z"
+last_updated: "2026-02-26T07:11:30Z"
 progress:
   total_phases: 2
-  completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,30 +18,30 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
-**Current focus:** Phase 2 — Financial Logic Tests
+**Current focus:** Phase 3 — Integration Tests
 
 ## Current Position
 
-Phase: 2 of 4 (Financial Logic Tests)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-26 — Completed 02-01 (Installment generator tests)
+Phase: 2 of 4 (Financial Logic Tests) -- COMPLETE
+Plan: 2 of 2 in current phase (all done)
+Status: Phase 2 Complete
+Last activity: 2026-02-26 — Completed 02-02 (Preview parity and recalculator tests)
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 1.8min
-- Total execution time: 5.5min
+- Total plans completed: 4
+- Average duration: 1.9min
+- Total execution time: 7.5min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-testing-infrastructure | 2 | 3min | 1.5min |
-| 02-financial-logic-tests | 1 | 2.5min | 2.5min |
+| 02-financial-logic-tests | 2 | 4.5min | 2.25min |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -67,6 +67,10 @@ Recent decisions affecting current work:
 - 02-01: SharedInstallmentParams interface + toGeneratorParams() for generator/preview interop
 - 02-01: One describe block per FIN requirement for direct test-to-requirement traceability
 - 02-01: All toBe() restricted to non-monetary values -- expectMoney for all amount assertions
+- 02-02: assertParity() helper abstracts field-by-field comparison for DRY scenario coverage
+- 02-02: vi.mock at module level before import for Prisma-dependent modules
+- 02-02: createMockInstallment factory uses plain numbers since source calls Number() on amounts
+- 02-02: originalAmount=undefined (not null) for Prisma skip-update semantics on second refuerzo
 
 ### Pending Todos
 
@@ -81,5 +85,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 02-01-PLAN.md (Installment generator tests) — ready for 02-02
+Stopped at: Completed 02-02-PLAN.md (Preview parity and recalculator tests) — Phase 2 complete, ready for Phase 3
 Resume file: None
