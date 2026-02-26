@@ -30,7 +30,7 @@ import {
  * Asserts: same length, and for each index: amount (via expectMoney),
  * dueDate (via getTime), monthLabel, and number/installmentNumber mapping.
  */
-function assertParity(scenario: SharedInstallmentParams, label: string) {
+function assertParity(scenario: SharedInstallmentParams) {
   const preview = calculateInstallmentPreview(scenario)
   const generated = generateInstallments(toGeneratorParams(scenario))
 
@@ -54,18 +54,18 @@ function assertParity(scenario: SharedInstallmentParams, label: string) {
 
 describe('FIN-05: preview/generator parity', () => {
   it('STANDARD_60_CUOTAS: 60 installments base case', () => {
-    assertParity(STANDARD_60_CUOTAS, 'STANDARD_60_CUOTAS')
+    assertParity(STANDARD_60_CUOTAS)
   })
 
   it('VARIABLE_FIRST_INSTALLMENT: first amount differs from regular', () => {
-    assertParity(VARIABLE_FIRST_INSTALLMENT, 'VARIABLE_FIRST_INSTALLMENT')
+    assertParity(VARIABLE_FIRST_INSTALLMENT)
   })
 
   it('YEAR_ROLLOVER: crosses Dec-Jan year boundary', () => {
-    assertParity(YEAR_ROLLOVER, 'YEAR_ROLLOVER')
+    assertParity(YEAR_ROLLOVER)
   })
 
   it('DAY_31_CLAMPING: day 31 clamped in short months', () => {
-    assertParity(DAY_31_CLAMPING, 'DAY_31_CLAMPING')
+    assertParity(DAY_31_CLAMPING)
   })
 })

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Unit tests for recalculateInstallments() covering:
  * - FIN-06: First refuerzo reduces unpaid amounts and sets originalAmount
