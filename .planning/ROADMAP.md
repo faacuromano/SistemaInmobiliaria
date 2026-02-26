@@ -71,7 +71,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Lots are grouped by manzana with labeled section headers and color-coded status badges visible at a glance
   5. Clicking a lot opens a detail panel (or Sheet drawer on mobile) showing buyer name, price, area, tags, and a link to the sale record
   6. Lot view preference (grid/list) survives page navigation and browser refresh via localStorage
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 04-01-PLAN.md — Fix delivery gates: tsc, lint, and build errors (GATE-01, GATE-02, GATE-03)
+- [ ] 04-02-PLAN.md — Lot grid redesign: white cards with accent borders, collapsible manzana sections, localStorage view persistence (GRID-01, GRID-02, GRID-05)
+- [ ] 04-03-PLAN.md — Detail panel enhancement, mobile bottom Sheet, print view (GRID-03, GRID-04, GRID-06)
 
 ## Progress
 
@@ -83,4 +86,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Testing Infrastructure | 2/2 | Complete | 2026-02-26 |
 | 2. Financial Logic Tests | 2/2 | Complete | 2026-02-26 |
 | 3. Integration Tests | 0/2 | Not started | - |
-| 4. Delivery Gates and Lot Grid | 0/? | Not started | - |
+| 4. Delivery Gates and Lot Grid | 0/3 | Not started | - |
