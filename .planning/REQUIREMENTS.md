@@ -19,11 +19,11 @@ Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 - [x] **DEV-01**: New Lot dialog has proper padding and margins for comfortable layout
 - [x] **DEV-02**: Editing a sold lot preserves the current status instead of silently resetting to DISPONIBLE
 - [x] **DEV-03**: User can select multiple lots and edit shared fields (tags, status where applicable) in bulk
-- [ ] **DEV-04**: User can add a Google Maps URL to a development and click it to view the location
+- [x] **DEV-04**: User can add a Google Maps URL to a development and click it to view the location
 
 ### Personas
 
-- [ ] **PERS-01**: Person detail page displays information in a clearer, better-organized layout with improved table design
+- [x] **PERS-01**: Person detail page displays information in a clearer, better-organized layout with improved table design
 
 ### Mensajes
 
@@ -66,8 +66,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DEV-01 | Phase 5 | Complete |
 | DEV-02 | Phase 5 | Complete |
 | DEV-03 | Phase 7 | Complete |
-| DEV-04 | Phase 7 | Pending |
-| PERS-01 | Phase 7 | Pending |
+| DEV-04 | Phase 7 | Complete |
+| PERS-01 | Phase 7 | Complete |
 | MSG-01 | Phase 5 | Complete |
 
 **Coverage:**
