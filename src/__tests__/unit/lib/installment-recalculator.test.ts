@@ -77,9 +77,9 @@ describe('recalculateInstallments', () => {
       for (let i = 0; i < 3; i++) {
         const callArgs = prismaMock.installment.update.mock.calls[i][0]
         expect(callArgs.where.id).toBe(`inst-${i + 1}`)
-        expectMoney(callArgs.data.amount, 150)
+        expectMoney(Number(callArgs.data.amount), 150)
         // originalAmount should be set to 250 (original) since it was null
-        expectMoney(callArgs.data.originalAmount, 250)
+        expectMoney(Number(callArgs.data.originalAmount), 250)
       }
 
       // Verify $transaction was called exactly once (atomicity)
@@ -127,7 +127,7 @@ describe('recalculateInstallments', () => {
       for (let i = 0; i < 3; i++) {
         const callArgs = prismaMock.installment.update.mock.calls[i][0]
         // Amount reduced from 150 to 100
-        expectMoney(callArgs.data.amount, 100)
+        expectMoney(Number(callArgs.data.amount), 100)
         // originalAmount should be undefined (Prisma ignores undefined fields)
         // This ensures it is NOT overwritten
         expect(callArgs.data.originalAmount).toBeUndefined()
@@ -154,7 +154,7 @@ describe('recalculateInstallments', () => {
 
       for (let i = 0; i < 3; i++) {
         const callArgs = prismaMock.installment.update.mock.calls[i][0]
-        expectMoney(callArgs.data.amount, 0)
+        expectMoney(Number(callArgs.data.amount), 0)
       }
     })
 
@@ -176,7 +176,7 @@ describe('recalculateInstallments', () => {
 
       for (let i = 0; i < 3; i++) {
         const callArgs = prismaMock.installment.update.mock.calls[i][0]
-        expectMoney(callArgs.data.amount, 0)
+        expectMoney(Number(callArgs.data.amount), 0)
       }
     })
 
@@ -198,7 +198,7 @@ describe('recalculateInstallments', () => {
 
       for (let i = 0; i < 3; i++) {
         const callArgs = prismaMock.installment.update.mock.calls[i][0]
-        expectMoney(callArgs.data.amount, 1)
+        expectMoney(Number(callArgs.data.amount), 1)
       }
     })
   })
