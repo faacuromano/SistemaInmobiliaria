@@ -1,78 +1,131 @@
-# Requirements: Sistema Inmobiliaria -- Milestone 2
+# Requirements: Sistema Inmobiliaria
 
-**Defined:** 2026-02-25
-**Core Value:** The signing calendar must dynamically reflect the business's actual working hours and breaks, configured by administrators.
+**Defined:** 2026-02-26
+**Core Value:** The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
 
 ## v1 Requirements
 
-### Business Hours Configuration
+Requirements for delivery release. Each maps to roadmap phases.
 
-- [x] **BHRS-01**: Admin can set opening time (HH:MM format) in system settings
-- [x] **BHRS-02**: Admin can set closing time (HH:MM format) in system settings
-- [x] **BHRS-03**: Admin can add multiple custom breaks with label, start time, and end time
-- [x] **BHRS-04**: Admin can remove any break from the list
-- [x] **BHRS-05**: Admin can enable/disable each day of the week (Monday through Sunday)
-- [x] **BHRS-06**: System validates breaks don't overlap and fall within opening/closing range
-- [x] **BHRS-07**: System provides sensible defaults (09:00-17:00, Mon-Fri, lunch 12:00-14:00) on fresh install
+### Testing Infrastructure
 
-### Dynamic Calendar
+- [ ] **TEST-01**: Vitest installed and configured with jsdom environment, path aliases, and React plugin
+- [ ] **TEST-02**: Shared test helper `mockAuthenticatedUser(role)` mocks `requirePermission` and `auth()` for any of the 4 RBAC roles
+- [ ] **TEST-03**: Shared test helper `expectMoney(received, expected)` uses `toBeCloseTo(n, 2)` for financial assertions
+- [ ] **TEST-04**: `npm test` script runs all tests and reports results
+- [ ] **TEST-05**: Coverage reporting configured with @vitest/coverage-v8
 
-- [x] **DCAL-01**: Signing calendar renders time slots generated from business hours config (30-min intervals)
-- [x] **DCAL-02**: Calendar shows only enabled days (dynamic column count, not hardcoded 5)
-- [x] **DCAL-03**: Break periods appear as visual separator rows with their labels
-- [ ] **DCAL-04**: Existing signings at times outside configured hours are still visible with an "out of hours" indicator
-- [x] **DCAL-05**: Week navigation and date range queries adapt to configured days
+### Financial Logic Tests
 
-### Bug Fix
+- [ ] **FIN-01**: `generateInstallments()` tested for collectionDay 31 clamping in Feb (28/29), Apr, Jun, Sep, Nov
+- [ ] **FIN-02**: `generateInstallments()` tested for year rollover (Dec → Jan next year)
+- [ ] **FIN-03**: `generateInstallments()` tested for variable first installment amount (`firstInstallmentAmount`)
+- [ ] **FIN-04**: `generateInstallments()` tested for zero installments (contado sale)
+- [ ] **FIN-05**: `calculateInstallmentPreview()` parity test — same inputs produce identical outputs as `generateInstallments()`
+- [ ] **FIN-06**: `recalculateInstallments()` tested for first refuerzo — unpaid installments reduced, `originalAmount` set
+- [ ] **FIN-07**: `recalculateInstallments()` tested for second refuerzo — `originalAmount` NOT overwritten
+- [ ] **FIN-08**: `recalculateInstallments()` tested for edge case: reduction > installment amount → clamped to 0
+- [ ] **FIN-09**: Decimal precision assertions for all monetary calculations using `expectMoney` helper
 
-- [ ] **BFIX-01**: NotificationBell no longer causes hydration mismatch (timeAgo deferred to post-mount)
+### Server Action Integration Tests
+
+- [ ] **ACT-01**: `sale.actions` create sale test — verifies lot status changes to VENDIDO and installments are generated
+- [ ] **ACT-02**: `sale.actions` cancel sale test — verifies lot status reverts to DISPONIBLE
+- [ ] **ACT-03**: `sale.actions` contado sale test — verifies zero installments and lot status CONTADO
+- [ ] **ACT-04**: `payment.actions` payment recording test — verifies CashMovement created and installment marked PAGADA
+- [ ] **ACT-05**: `payment.actions` payment with recalculation test — verifies recalculation triggered after refuerzo payment
+- [ ] **ACT-06**: `payment.actions` partial failure test — verifies behavior when payment commits but recalculation fails
+
+### Lot Grid Polish
+
+- [ ] **GRID-01**: Lots grouped by manzana/block with visual section headers
+- [ ] **GRID-02**: Lot cards color-coded by status (DISPONIBLE=green, VENDIDO=blue, etc.)
+- [ ] **GRID-03**: Clicking a lot opens detail panel showing buyer, price, area, tags, and sale link
+- [ ] **GRID-04**: Mobile: lot detail opens as Sheet drawer
+- [ ] **GRID-05**: View mode persists across navigation via localStorage
+- [ ] **GRID-06**: Print view via `@media print` — hides controls, renders lots flat for client meetings
+
+### Delivery Gates
+
+- [ ] **GATE-01**: `tsc --noEmit` passes with zero errors
+- [ ] **GATE-02**: `npm run lint` passes with zero warnings
+- [ ] **GATE-03**: `npm run build` completes successfully
 
 ## v2 Requirements
 
-### Business Hours Enhancements
+Deferred to future release. Tracked but not in current roadmap.
 
-- **BHRS-08**: Live preview of generated time slots in settings UI
-- **BHRS-09**: Warning when config changes would affect existing signings
-- **BHRS-10**: Per-day different hours (e.g., shorter Fridays)
+### RBAC Tests
 
-### Calendar Enhancements
+- **RBAC-01**: `hasPermission()` tested for full 4-role × 16-permission matrix with negative assertions
+- **RBAC-02**: SUPER_ADMIN wildcard `["*"]` tested to grant every permission
+- **RBAC-03**: Permission boundary tests for each role's excluded permissions
 
-- **DCAL-06**: Signing form restricts time picker to only configured hours
-- **DCAL-07**: Google Calendar sync for signing slots
+### Exchange Rate
+
+- **XRATE-01**: `convertCurrency` tested for zero-rate silent fallback (returns 0 instead of throwing)
+- **XRATE-02**: Exchange rate fetch tested with mock for dolarapi.com response
+
+### QA
+
+- **QA-01**: Formal smoke test run of all 13 TESTING.md sections on seed data
+- **QA-02**: Decimal serialization type contract test (Prisma Decimal → number)
 
 ## Out of Scope
 
+Explicitly excluded. Documented to prevent scope creep.
+
 | Feature | Reason |
 |---------|--------|
-| Configurable slot duration (15/30/60 min) | Adds complexity without proportional value; 30-min fixed is sufficient |
-| Customer self-booking portal | Internal ERP only; admins manage all bookings |
-| Drag-and-drop calendar | High complexity; current click-to-book UX is adequate |
-| Recurring appointments | Signing slots are one-off events by nature |
-| Per-day different hours | User explicitly deferred; same schedule for all enabled days |
+| E2E browser tests (Playwright) | Slow, brittle, expensive — unit tests + manual smoke sufficient for single-client delivery |
+| Geographic/satellite map | Client wants manzana grid, not geography |
+| 360° Virtual Tour integration | Deferred — separate project with own documentation |
+| Real-time WebSocket updates | Not justified for low concurrent user count; `revalidatePath` sufficient |
+| Multi-tenant support | Single client deployment |
+| 100% code coverage requirement | Drives testing implementation details; cover risk areas instead |
+| Docker-based test DB in CI | Out of scope for single-client handoff |
 
 ## Traceability
 
+Which phases cover which requirements. Updated during roadmap creation.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BHRS-01 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-02 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-03 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-04 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-05 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-06 | Phase 1: Business Hours Configuration | Complete |
-| BHRS-07 | Phase 1: Business Hours Configuration | Complete |
-| DCAL-01 | Phase 2: Dynamic Signing Calendar | Complete |
-| DCAL-02 | Phase 2: Dynamic Signing Calendar | Complete |
-| DCAL-03 | Phase 2: Dynamic Signing Calendar | Complete |
-| DCAL-04 | Phase 2: Dynamic Signing Calendar | Pending |
-| DCAL-05 | Phase 2: Dynamic Signing Calendar | Complete |
-| BFIX-01 | Phase 3: Hydration Fix | Pending |
+| TEST-01 | — | Pending |
+| TEST-02 | — | Pending |
+| TEST-03 | — | Pending |
+| TEST-04 | — | Pending |
+| TEST-05 | — | Pending |
+| FIN-01 | — | Pending |
+| FIN-02 | — | Pending |
+| FIN-03 | — | Pending |
+| FIN-04 | — | Pending |
+| FIN-05 | — | Pending |
+| FIN-06 | — | Pending |
+| FIN-07 | — | Pending |
+| FIN-08 | — | Pending |
+| FIN-09 | — | Pending |
+| ACT-01 | — | Pending |
+| ACT-02 | — | Pending |
+| ACT-03 | — | Pending |
+| ACT-04 | — | Pending |
+| ACT-05 | — | Pending |
+| ACT-06 | — | Pending |
+| GRID-01 | — | Pending |
+| GRID-02 | — | Pending |
+| GRID-03 | — | Pending |
+| GRID-04 | — | Pending |
+| GRID-05 | — | Pending |
+| GRID-06 | — | Pending |
+| GATE-01 | — | Pending |
+| GATE-02 | — | Pending |
+| GATE-03 | — | Pending |
 
 **Coverage:**
-- v1 requirements: 13 total
-- Mapped to phases: 13
-- Unmapped: 0
+- v1 requirements: 29 total
+- Mapped to phases: 0
+- Unmapped: 29 ⚠️
 
 ---
-*Requirements defined: 2026-02-25*
-*Last updated: 2026-02-25 after roadmap creation*
+*Requirements defined: 2026-02-26*
+*Last updated: 2026-02-26 after initial definition*
