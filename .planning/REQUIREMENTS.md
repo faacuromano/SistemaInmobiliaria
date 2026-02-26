@@ -7,7 +7,7 @@
 
 Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 
-### Estadísticas
+### Estadisticas
 
 - [ ] **STAT-01**: User can filter monthly movements table by movement type (CUOTA, SUELDO, etc.) to understand income/expense sources
 - [ ] **STAT-02**: User can see visual differentiation between movement types in the monthly table (color coding or icons)
@@ -33,10 +33,10 @@ Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 
 Deferred to future release. Tracked but not in current roadmap.
 
-### Estadísticas
+### Estadisticas
 
 - **STAT-F01**: User can see year-over-year trend charts for collection performance
-- **STAT-F02**: User can export estadísticas data to CSV/PDF
+- **STAT-F02**: User can export estadisticas data to CSV/PDF
 
 ### Desarrollos
 
@@ -59,22 +59,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STAT-01 | — | Pending |
-| STAT-02 | — | Pending |
-| STAT-03 | — | Pending |
-| STAT-04 | — | Pending |
-| DEV-01 | — | Pending |
-| DEV-02 | — | Pending |
-| DEV-03 | — | Pending |
-| DEV-04 | — | Pending |
-| PERS-01 | — | Pending |
-| MSG-01 | — | Pending |
+| STAT-01 | Phase 6 | Pending |
+| STAT-02 | Phase 6 | Pending |
+| STAT-03 | Phase 6 | Pending |
+| STAT-04 | Phase 6 | Pending |
+| DEV-01 | Phase 5 | Pending |
+| DEV-02 | Phase 5 | Pending |
+| DEV-03 | Phase 7 | Pending |
+| DEV-04 | Phase 7 | Pending |
+| PERS-01 | Phase 7 | Pending |
+| MSG-01 | Phase 5 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠️
+- Mapped to phases: 10
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after initial definition*
+*Last updated: 2026-02-26 after roadmap creation*

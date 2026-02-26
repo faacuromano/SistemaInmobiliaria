@@ -5,7 +5,7 @@ milestone_name: Bug Fixes & UX Polish
 status: active
 last_updated: "2026-02-26"
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
-**Current focus:** v1.1 Bug Fixes & UX Polish
+**Current focus:** v1.1 Bug Fixes & UX Polish — Phase 5: Quick Fixes
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-02-26 — Milestone v1.1 started
+Phase: 5 of 7 (Quick Fixes) — first phase of v1.1 milestone
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-02-26 — Roadmap created for v1.1
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [░░░░░░░░░░] 0% (0/3 v1.1 phases)
 
 ## Performance Metrics
 
@@ -51,10 +51,10 @@ None.
 ### Blockers/Concerns
 
 - Prisma `Decimal` serialization behavior in mocked vs real environments may diverge — evaluate `@electric-sql/pglite` if needed
-- Item 2 (Rendimientos de Cobranza) needs deep code analysis before requirements can be finalized
+- STAT-03 (collection rate fix) needs deep code analysis of current Rendimientos de Cobranza logic before planning
 
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Starting milestone v1.1
+Stopped at: Roadmap created for v1.1 milestone
 Resume file: None
