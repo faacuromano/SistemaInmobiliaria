@@ -38,11 +38,11 @@ Requirements for delivery release. Each maps to roadmap phases.
 
 ### Lot Grid Polish
 
-- [ ] **GRID-01**: Lots grouped by manzana/block with visual section headers
-- [ ] **GRID-02**: Lot cards color-coded by status (DISPONIBLE=green, VENDIDO=blue, etc.)
+- [x] **GRID-01**: Lots grouped by manzana/block with visual section headers
+- [x] **GRID-02**: Lot cards color-coded by status (DISPONIBLE=green, VENDIDO=blue, etc.)
 - [ ] **GRID-03**: Clicking a lot opens detail panel showing buyer, price, area, tags, and sale link
 - [ ] **GRID-04**: Mobile: lot detail opens as Sheet drawer
-- [ ] **GRID-05**: View mode persists across navigation via localStorage
+- [x] **GRID-05**: View mode persists across navigation via localStorage
 - [ ] **GRID-06**: Print view via `@media print` — hides controls, renders lots flat for client meetings
 
 ### Delivery Gates
@@ -111,11 +111,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACT-04 | Phase 3 | Complete |
 | ACT-05 | Phase 3 | Complete |
 | ACT-06 | Phase 3 | Complete |
-| GRID-01 | Phase 4 | Pending |
-| GRID-02 | Phase 4 | Pending |
+| GRID-01 | Phase 4 | Complete |
+| GRID-02 | Phase 4 | Complete |
 | GRID-03 | Phase 4 | Pending |
 | GRID-04 | Phase 4 | Pending |
-| GRID-05 | Phase 4 | Pending |
+| GRID-05 | Phase 4 | Complete |
 | GRID-06 | Phase 4 | Pending |
 | GATE-01 | Phase 4 | Pending |
 | GATE-02 | Phase 4 | Pending |
