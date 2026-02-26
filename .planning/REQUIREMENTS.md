@@ -32,9 +32,9 @@ Requirements for delivery release. Each maps to roadmap phases.
 - [ ] **ACT-01**: `sale.actions` create sale test — verifies lot status changes to VENDIDO and installments are generated
 - [ ] **ACT-02**: `sale.actions` cancel sale test — verifies lot status reverts to DISPONIBLE
 - [ ] **ACT-03**: `sale.actions` contado sale test — verifies zero installments and lot status CONTADO
-- [ ] **ACT-04**: `payment.actions` payment recording test — verifies CashMovement created and installment marked PAGADA
-- [ ] **ACT-05**: `payment.actions` payment with recalculation test — verifies recalculation triggered after refuerzo payment
-- [ ] **ACT-06**: `payment.actions` partial failure test — verifies behavior when payment commits but recalculation fails
+- [x] **ACT-04**: `payment.actions` payment recording test — verifies CashMovement created and installment marked PAGADA
+- [x] **ACT-05**: `payment.actions` payment with recalculation test — verifies recalculation triggered after refuerzo payment
+- [x] **ACT-06**: `payment.actions` partial failure test — verifies behavior when payment commits but recalculation fails
 
 ### Lot Grid Polish
 
@@ -108,9 +108,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ACT-01 | Phase 3 | Pending |
 | ACT-02 | Phase 3 | Pending |
 | ACT-03 | Phase 3 | Pending |
-| ACT-04 | Phase 3 | Pending |
-| ACT-05 | Phase 3 | Pending |
-| ACT-06 | Phase 3 | Pending |
+| ACT-04 | Phase 3 | Complete |
+| ACT-05 | Phase 3 | Complete |
+| ACT-06 | Phase 3 | Complete |
 | GRID-01 | Phase 4 | Pending |
 | GRID-02 | Phase 4 | Pending |
 | GRID-03 | Phase 4 | Pending |

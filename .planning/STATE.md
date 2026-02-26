@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-02-26T07:16:07.321Z"
+status: in-progress
+last_updated: "2026-02-26T07:45:19Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -22,19 +22,19 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 
 ## Current Position
 
-Phase: 2 of 4 (Financial Logic Tests) -- COMPLETE
+Phase: 3 of 4 (Integration Tests) -- COMPLETE
 Plan: 2 of 2 in current phase (all done)
-Status: Phase 2 Complete
-Last activity: 2026-02-26 — Completed 02-02 (Preview parity and recalculator tests)
+Status: Phase 3 Complete
+Last activity: 2026-02-26 — Completed 03-01 (Sale actions integration tests)
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 1.9min
-- Total execution time: 7.5min
+- Total plans completed: 6
+- Average duration: 2.3min
+- Total execution time: 14.0min
 
 **By Phase:**
 
@@ -42,10 +42,11 @@ Progress: [████░░░░░░] 40%
 |-------|-------|-------|----------|
 | 01-testing-infrastructure | 2 | 3min | 1.5min |
 | 02-financial-logic-tests | 2 | 4.5min | 2.25min |
+| 03-integration-tests | 2 | 6.5min | 3.25min |
 
 **Recent Trend:**
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: 1.5, 2.25, 2.25, 3.1, 3.4min
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -71,6 +72,12 @@ Recent decisions affecting current work:
 - 02-02: vi.mock at module level before import for Prisma-dependent modules
 - 02-02: createMockInstallment factory uses plain numbers since source calls Number() on amounts
 - 02-02: originalAmount=undefined (not null) for Prisma skip-update semantics on second refuerzo
+- 03-01: Mock generateInstallments at module level with realistic 2-item return value to prove wiring without testing generator
+- 03-01: Clear generateInstallments mock calls in beforeEach to prevent cross-test pollution
+- 03-01: Use accented Spanish in stringContaining assertions to match actual error messages
+- 03-02: $transaction mock passes prismaMock as tx so inner tx.* calls use same mock instance
+- 03-02: ACT-06 proves payment persists despite recalculation failure by asserting mock calls even on error result
+- 03-02: recalculateInstallments receives total extraCharge.amount not payment amount
 
 ### Pending Todos
 
@@ -78,12 +85,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 3]: Partial-failure recovery path in `payment.actions.ts` (lines 290-310) is undocumented — needs code archaeology before writing ACT-06 test
+- ~~[Phase 3]: Partial-failure recovery path in `payment.actions.ts` — RESOLVED in 03-02, ACT-06 test covers this~~
 - [Phase 3]: Prisma `Decimal` serialization behavior in mocked vs real environments may diverge — evaluate `@electric-sql/pglite` during Phase 3 planning
+- ~~[Phase 3]: sale-actions.test.ts contado test has pre-existing failure from Plan 03-01 -- RESOLVED in 03-01 execution, mockClear in beforeEach fixes cross-test pollution~~
 - [Phase 4]: Confirm whether seed data exists for smoke test run or needs to be created
 
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 02-02-PLAN.md (Preview parity and recalculator tests) — Phase 2 complete, ready for Phase 3
+Stopped at: Completed 03-02-PLAN.md (Payment actions integration tests)
 Resume file: None
