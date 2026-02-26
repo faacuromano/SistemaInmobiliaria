@@ -10,8 +10,8 @@ Requirements for delivery release. Each maps to roadmap phases.
 ### Testing Infrastructure
 
 - [x] **TEST-01**: Vitest installed and configured with jsdom environment, path aliases, and React plugin
-- [ ] **TEST-02**: Shared test helper `mockAuthenticatedUser(role)` mocks `requirePermission` and `auth()` for any of the 4 RBAC roles
-- [ ] **TEST-03**: Shared test helper `expectMoney(received, expected)` uses `toBeCloseTo(n, 2)` for financial assertions
+- [x] **TEST-02**: Shared test helper `mockAuthenticatedUser(role)` mocks `requirePermission` and `auth()` for any of the 4 RBAC roles
+- [x] **TEST-03**: Shared test helper `expectMoney(received, expected)` uses `toBeCloseTo(n, 2)` for financial assertions
 - [x] **TEST-04**: `npm test` script runs all tests and reports results
 - [x] **TEST-05**: Coverage reporting configured with @vitest/coverage-v8
 
@@ -92,8 +92,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | TEST-01 | Phase 1 | Complete |
-| TEST-02 | Phase 1 | Pending |
-| TEST-03 | Phase 1 | Pending |
+| TEST-02 | Phase 1 | Complete |
+| TEST-03 | Phase 1 | Complete |
 | TEST-04 | Phase 1 | Complete |
 | TEST-05 | Phase 1 | Complete |
 | FIN-01 | Phase 2 | Pending |
