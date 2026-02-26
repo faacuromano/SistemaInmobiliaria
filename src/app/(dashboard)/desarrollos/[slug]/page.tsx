@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Pencil, MapPin } from "lucide-react";
+import { Pencil, MapPin, ExternalLink } from "lucide-react";
 import { hasPermission } from "@/lib/rbac";
 import {
   DEVELOPMENT_STATUS_LABELS,
@@ -78,7 +78,19 @@ export default async function DevelopmentDetailPage({ params }: Props) {
           <CardContent>
             <div className="flex items-center gap-1">
               <MapPin className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm">{development.location || "---"}</span>
+              {development.googleMapsUrl ? (
+                <a
+                  href={development.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                >
+                  {development.location || "Ver en Google Maps"}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              ) : (
+                <span className="text-sm">{development.location || "---"}</span>
+              )}
             </div>
           </CardContent>
         </Card>
