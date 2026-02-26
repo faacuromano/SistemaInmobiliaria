@@ -9,6 +9,7 @@ import { LotsGrid } from "./lots-grid";
 import { LotDetailPanel } from "./lot-detail-panel";
 import { LotFormDialog } from "./lot-form-dialog";
 import { LotFilters } from "./lot-filters";
+import { BulkActionsBar } from "./bulk-actions-bar";
 import { ManageTagsDialog } from "./manage-tags-dialog";
 import { LOT_STATUS_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,7 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [selectedLot, setSelectedLot] = useState<LotRow | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Read persisted view mode from localStorage on mount
   useEffect(() => {
@@ -104,6 +106,31 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
     setViewMode(mode);
     localStorage.setItem(STORAGE_KEY, mode);
     if (mode === "table") setSelectedLot(null);
+    if (mode === "grid") setSelectedIds(new Set());
+  }
+
+  function handleToggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  }
+
+  function handleToggleAll() {
+    if (selectedIds.size === lots.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(lots.map((l) => l.id)));
+    }
+  }
+
+  function handleClearSelection() {
+    setSelectedIds(new Set());
   }
 
   const statusCounts = useMemo(() => {
@@ -210,6 +237,9 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
           canManageLots={canManageLots}
           allTags={allTags}
           onEdit={handleEdit}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+          onToggleAll={handleToggleAll}
         />
       ) : (
         /* Grid mode — manzana grouping, white cards, desktop side panel */
@@ -267,6 +297,14 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
           open={tagsDialogOpen}
           onOpenChange={setTagsDialogOpen}
           tags={allTags}
+        />
+      )}
+      {selectedIds.size > 0 && viewMode === "table" && canManageLots && (
+        <BulkActionsBar
+          selectedCount={selectedIds.size}
+          selectedIds={Array.from(selectedIds)}
+          allTags={allTags}
+          onClearSelection={handleClearSelection}
         />
       )}
     </div>
