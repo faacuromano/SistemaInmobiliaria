@@ -29,7 +29,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A shared `mockAuthenticatedUser(role)` helper suppresses auth redirects in action tests for all 4 RBAC roles
   4. A shared `expectMoney(received, expected)` helper enforces two-decimal precision on all financial assertions
   5. Coverage reports are generated when running `npm run test:coverage`
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 01-01-PLAN.md — Install Vitest, configure test environment, create smoke test
+- [ ] 01-02-PLAN.md — Create shared test helpers (mockAuthenticatedUser, expectMoney, prismaMock)
 
 ### Phase 2: Financial Logic Tests
 **Goal**: Pure installment generation and recalculation functions are verified against all known edge cases, including the high-risk parity divergence between preview and generator
@@ -74,7 +76,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Testing Infrastructure | 0/? | Not started | - |
+| 1. Testing Infrastructure | 0/2 | Planned | - |
 | 2. Financial Logic Tests | 0/? | Not started | - |
 | 3. Integration Tests | 0/? | Not started | - |
 | 4. Delivery Gates and Lot Grid | 0/? | Not started | - |
