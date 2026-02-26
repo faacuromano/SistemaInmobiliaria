@@ -9,10 +9,10 @@ Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 
 ### Estadisticas
 
-- [ ] **STAT-01**: User can filter monthly movements table by movement type (CUOTA, SUELDO, etc.) to understand income/expense sources
-- [ ] **STAT-02**: User can see visual differentiation between movement types in the monthly table (color coding or icons)
-- [ ] **STAT-03**: User can see correct collection rate that accounts for PARCIAL payments proportionally
-- [ ] **STAT-04**: User can see clear labels and help text explaining what "Rendimientos de Cobranza" metrics mean
+- [x] **STAT-01**: User can filter monthly movements table by movement type (CUOTA, SUELDO, etc.) to understand income/expense sources
+- [x] **STAT-02**: User can see visual differentiation between movement types in the monthly table (color coding or icons)
+- [x] **STAT-03**: User can see correct collection rate that accounts for PARCIAL payments proportionally
+- [x] **STAT-04**: User can see clear labels and help text explaining what "Rendimientos de Cobranza" metrics mean
 
 ### Desarrollos
 
@@ -59,10 +59,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STAT-01 | Phase 6 | Pending |
-| STAT-02 | Phase 6 | Pending |
-| STAT-03 | Phase 6 | Pending |
-| STAT-04 | Phase 6 | Pending |
+| STAT-01 | Phase 6 | Complete |
+| STAT-02 | Phase 6 | Complete |
+| STAT-03 | Phase 6 | Complete |
+| STAT-04 | Phase 6 | Complete |
 | DEV-01 | Phase 5 | Complete |
 | DEV-02 | Phase 5 | Complete |
 | DEV-03 | Phase 7 | Pending |
@@ -77,4 +77,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-26*
-*Last updated: 2026-02-26 after roadmap creation*
+*Last updated: 2026-02-26 after Phase 6 Plan 01 execution*
