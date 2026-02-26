@@ -10,24 +10,24 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 1 of 4 (Testing Infrastructure)
-Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-02-26 — Roadmap created, phases derived from requirements
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-02-26 — Completed 01-01 (Vitest setup)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 10%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 1
+- Average duration: 2min
+- Total execution time: 2min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-testing-infrastructure | 1 | 2min | 2min |
 
 **Recent Trend:**
 - Last 5 plans: —
@@ -45,6 +45,8 @@ Recent decisions affecting current work:
 - Roadmap: Vitest chosen over Jest — Vite-native, no transform config needed for Next.js 15
 - Roadmap: Phase 3 depends on Phase 1 (not Phase 2) — integration tests need shared helpers, not pure function results
 - Roadmap: Lot grid polish deferred to Phase 4 — UI work on top of verified business logic
+- 01-01: tsconfigPaths() before react() in Vitest plugins array for correct path resolution order
+- 01-01: Coverage scoped to src/lib, src/server, src/schemas -- excludes generated code and test helpers
 
 ### Pending Todos
 
@@ -59,5 +61,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Roadmap created, STATE.md initialized — ready to plan Phase 1
+Stopped at: Completed 01-01-PLAN.md (Vitest setup) — ready for 01-02
 Resume file: None
