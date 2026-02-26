@@ -1,409 +1,367 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-02-25
+**Analysis Date:** 2026-02-26
 
 ## Directory Layout
 
 ```
-sistema-inmobiliaria/
+sistemaInmobiliaria/
 ├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── (auth)/               # Public auth pages
-│   │   │   └── login/
-│   │   ├── (dashboard)/          # Protected app routes
-│   │   │   ├── auditoria/        # Audit log viewer
-│   │   │   ├── caja/             # Cash movements ledger
-│   │   │   ├── cobranza/         # Collections/payment management
-│   │   │   ├── configuracion/    # System settings
-│   │   │   ├── dashboard/        # Home/KPI dashboard
-│   │   │   ├── desarrollos/      # Real estate developments
-│   │   │   ├── estadisticas/     # Reports & analytics
-│   │   │   ├── firmas/           # Signing slot scheduling
-│   │   │   ├── mensajes/         # Internal messaging
-│   │   │   ├── personas/         # Customers & suppliers
-│   │   │   └── ventas/           # Sales management
-│   │   └── api/                  # API routes
-│   │       ├── auth/[...nextauth]/
-│   │       ├── cron/notify-upcoming/
-│   │       └── health/
+│   ├── app/                          # Next.js App Router
+│   │   ├── (auth)/
+│   │   │   └── login/               # Public login page
+│   │   ├── (dashboard)/             # Protected routes (layout guards with requireAuth)
+│   │   │   ├── auditoria/           # Audit log viewer
+│   │   │   ├── caja/                # Cash management (cash movements, balance)
+│   │   │   ├── cobranza/            # Collections (payment tracking, overdue management)
+│   │   │   ├── configuracion/       # System config (users, roles, permissions, import)
+│   │   │   ├── dashboard/           # KPI dashboard (active sales, overdue count, monthly income)
+│   │   │   ├── desarrollos/         # Development listings, details, editing
+│   │   │   ├── estadisticas/        # Analytics and reports
+│   │   │   ├── firmas/              # Signing slots calendar and management
+│   │   │   ├── mensajes/            # Internal messaging
+│   │   │   ├── personas/            # Clients/suppliers directory with ficha (profile)
+│   │   │   ├── ventas/              # Sales CRUD with installment plan generation
+│   │   │   ├── layout.tsx           # Dashboard wrapper with sidebar, auth guard
+│   │   │   ├── error.tsx            # Error boundary for dashboard routes
+│   │   │   └── loading.tsx          # Loading skeleton
+│   │   ├── api/
+│   │   │   ├── auth/[...nextauth]/  # NextAuth v5 routes
+│   │   │   ├── cron/notify-upcoming/ # Daily cron for notifications + emails
+│   │   │   └── health/              # Health check endpoint
+│   │   ├── layout.tsx               # Root layout (html, body, globals.css)
+│   │   ├── page.tsx                 # Redirect to /dashboard
+│   │   ├── globals.css              # Tailwind directives + custom styles
+│   │   └── [feature]/               # Dynamic route pattern
+│   │       ├── page.tsx             # List/index page
+│   │       ├── nuevo/               # Create form page
+│   │       ├── [id]/                # Detail page
+│   │       ├── [id]/editar/         # Edit form page
+│   │       └── _components/         # Feature-specific components
 │   │
-│   ├── server/                   # Backend layer
-│   │   ├── actions/              # 23 Server Actions (.actions.ts)
-│   │   │   ├── auth.actions.ts
-│   │   │   ├── cash-movement.actions.ts
-│   │   │   ├── development.actions.ts
-│   │   │   ├── exchange-rate.actions.ts
-│   │   │   ├── extra-charge.actions.ts
-│   │   │   ├── lot.actions.ts
-│   │   │   ├── payment.actions.ts
-│   │   │   ├── person.actions.ts
-│   │   │   ├── role-permission.actions.ts
-│   │   │   ├── sale.actions.ts
-│   │   │   ├── signing.actions.ts
-│   │   │   ├── user.actions.ts
-│   │   │   └── ... (19 more)
+│   ├── server/                      # Server-side only code
+│   │   ├── actions/                 # Server Actions ("use server")
+│   │   │   ├── *.actions.ts         # 21 files: one per domain model
+│   │   │   │   - auth.actions.ts
+│   │   │   │   - user.actions.ts
+│   │   │   │   - person.actions.ts
+│   │   │   │   - sale.actions.ts
+│   │   │   │   - lot.actions.ts
+│   │   │   │   - cash-movement.actions.ts
+│   │   │   │   - extra-charge.actions.ts
+│   │   │   │   - installment.actions.ts
+│   │   │   │   - signing.actions.ts
+│   │   │   │   - exchange-rate.actions.ts
+│   │   │   │   - development.actions.ts
+│   │   │   │   - audit-log.actions.ts
+│   │   │   │   - import.actions.ts
+│   │   │   │   - notification.actions.ts
+│   │   │   │   - message.actions.ts
+│   │   │   │   - and 6 more...
+│   │   │   └── Pattern: validate(Zod) → requirePermission → model.method → logAction → revalidatePath
 │   │   │
-│   │   ├── models/               # 19 Data Access Layer files (.model.ts)
-│   │   │   ├── cash-balance.model.ts
-│   │   │   ├── cash-movement.model.ts
-│   │   │   ├── development.model.ts
-│   │   │   ├── exchange-rate.model.ts
-│   │   │   ├── installment.model.ts
-│   │   │   ├── lot.model.ts
-│   │   │   ├── payment-receipt.model.ts
-│   │   │   ├── person.model.ts
-│   │   │   ├── role-permission.model.ts
-│   │   │   ├── sale.model.ts
-│   │   │   ├── user.model.ts
-│   │   │   └── ... (8 more)
+│   │   ├── models/                  # Data access layer (Prisma wrappers)
+│   │   │   ├── *.model.ts           # 19 files: one per domain model
+│   │   │   │   - person.model.ts    # findAll, findById, create, update, toggleActive, findForCollection
+│   │   │   │   - sale.model.ts      # findAll, findById, create, updateStatus, findActiveSaleForLot
+│   │   │   │   - lot.model.ts
+│   │   │   │   - installment.model.ts
+│   │   │   │   - extra-charge.model.ts
+│   │   │   │   - cash-movement.model.ts
+│   │   │   │   - signing.model.ts
+│   │   │   │   - user.model.ts
+│   │   │   │   - cron.model.ts      # Special: findUpcomingExtraCharges, findOverdueInstallments
+│   │   │   │   └── and 10 more...
+│   │   │   └── Pattern: Export object with async methods, use Prisma with specific includes
 │   │   │
-│   │   └── controllers/          # Minimal; mostly unused (legacy structure)
+│   │   ├── services/                # Business logic services (currently sparse)
+│   │   │   └── [Mostly logic is in lib/ utilities]
+│   │   │
+│   │   └── controllers/             # Request handlers (currently empty, future use)
 │   │
-│   ├── lib/                      # Shared utilities & config
-│   │   ├── auth.ts               # Next-Auth exports (handlers, auth)
-│   │   ├── auth.config.ts        # Auth config object
-│   │   ├── auth-guard.ts         # requireAuth(), requirePermission()
-│   │   ├── rbac.ts               # Permission types & DB checks
-│   │   ├── installment-generator.ts   # Generate payment schedules
-│   │   ├── installment-recalculator.ts# Recalculate on extra charge
-│   │   ├── sale-helpers.ts       # Client-safe sale calculations
-│   │   ├── exchange-rate.ts      # Fetch dolarapi.com rates
-│   │   ├── format.ts             # formatCurrency(), formatDate()
-│   │   ├── constants.ts          # Enums, labels, defaults
-│   │   ├── email.ts              # Email utilities (Nodemailer config)
-│   │   ├── email-templates.ts    # Email HTML templates
-│   │   ├── navigation.ts         # Route structure constants
-│   │   ├── utils.ts              # Generic helpers (merge, pick, etc.)
-│   │   └── prisma.ts             # Prisma singleton export
+│   ├── lib/                         # Shared utilities and configuration
+│   │   ├── auth.ts                  # NextAuth setup with Credentials provider
+│   │   ├── auth.config.ts           # Auth callbacks (jwt, session, authorized)
+│   │   ├── auth-guard.ts            # requireAuth(), requirePermission() functions
+│   │   ├── rbac.ts                  # Role-based access control, permissions matrix
+│   │   ├── prisma.ts                # Prisma client singleton with PrismaPg adapter
+│   │   ├── constants.ts             # Domain enum labels and color mappings
+│   │   ├── format.ts                # Date, currency, installment formatting
+│   │   ├── utils.ts                 # Utility helpers (cn for className merging)
+│   │   ├── navigation.ts            # Sidebar menu structure
+│   │   ├── exchange-rate.ts         # Currency API integration (dolarapi.com)
+│   │   ├── email.ts                 # SMTP configuration and sendEmail function
+│   │   ├── email-templates.ts       # HTML email generators for notifications
+│   │   ├── installment-generator.ts # generateInstallments function
+│   │   ├── installment-recalculator.ts # recalculateInstallments function
+│   │   ├── sale-helpers.ts          # Sale-specific helpers (MONTH_NAMES, calculations)
+│   │   └── business-hours.ts        # Business hours configuration for signing calendar
 │   │
-│   ├── components/               # React components
-│   │   ├── ui/                   # shadcn/ui primitives
+│   ├── schemas/                     # Zod validation schemas
+│   │   ├── *.schema.ts              # 10 files: one per form/action
+│   │   │   - auth.schema.ts
+│   │   │   - user.schema.ts
+│   │   │   - person.schema.ts
+│   │   │   - sale.schema.ts
+│   │   │   - lot.schema.ts
+│   │   │   - cash-movement.schema.ts
+│   │   │   - extra-charge.schema.ts
+│   │   │   - development.schema.ts
+│   │   │   - exchange-rate.schema.ts
+│   │   │   └── business-hours.schema.ts
+│   │   └── Pattern: Export named schema with string parsing, coercion, min/max validations
+│   │
+│   ├── types/                       # TypeScript type definitions
+│   │   ├── enums.ts                 # Client-safe enum objects (DevelopmentStatus, Role, etc.)
+│   │   ├── actions.ts               # ActionResult<T> type
+│   │   ├── next-auth.d.ts           # Augmented Session type with user.role
+│   │   └── shared/                  # (Empty for now, for future type exports)
+│   │
+│   ├── components/                  # React components
+│   │   ├── ui/                      # shadcn/ui primitives
 │   │   │   ├── button.tsx
 │   │   │   ├── card.tsx
 │   │   │   ├── dialog.tsx
 │   │   │   ├── form.tsx
 │   │   │   ├── input.tsx
+│   │   │   ├── select.tsx
 │   │   │   ├── table.tsx
-│   │   │   ├── tabs.tsx
-│   │   │   └── ... (20+ primitives)
+│   │   │   └── 15+ more UI components
 │   │   │
-│   │   └── shared/               # Domain-specific components
-│   │       ├── page-header.tsx
-│   │       ├── status-badge.tsx
-│   │       ├── layout.tsx
-│   │       ├── sidebar.tsx
-│   │       └── ... (feature-specific components)
+│   │   └── shared/                  # Reusable components across features
+│   │       ├── sidebar.tsx          # Main navigation sidebar (role-aware)
+│   │       ├── mobile-sidebar.tsx   # Mobile drawer wrapper for sidebar
+│   │       ├── page-header.tsx      # Standardized page title + description
+│   │       ├── search-input.tsx     # Search box for filtering tables
+│   │       ├── data-table.tsx       # Reusable table component
+│   │       ├── status-badge.tsx     # Status display with color mapping
+│   │       ├── notification-bell.tsx # Real-time notification indicator
+│   │       ├── confirm-dialog.tsx   # Delete/action confirmation modal
+│   │       ├── empty-state.tsx      # No data placeholder
+│   │       └── header-info.tsx      # KPI card component
 │   │
-│   ├── hooks/                    # Custom React hooks
-│   │   ├── use-form-state.ts     # Wrap useFormState
-│   │   ├── use-toast.ts          # Toast notifications (Sonner)
-│   │   └── ... (other hooks)
+│   ├── hooks/                       # Custom React hooks
+│   │   └── [Specific feature hooks - details in codebase]
 │   │
-│   ├── providers/                # Context providers
-│   │   ├── theme-provider.tsx    # next-themes (dark mode)
-│   │   └── toast-provider.tsx    # Sonner Toaster
+│   ├── providers/                   # Context providers
+│   │   └── [Session provider, theme provider - details in codebase]
 │   │
-│   ├── schemas/                  # Zod validation schemas
-│   │   ├── auth.schema.ts        # Login validation
-│   │   ├── sale.schema.ts        # Sale creation validation
-│   │   ├── person.schema.ts      # Person/customer validation
-│   │   └── ... (domain schemas)
+│   ├── styles/                      # Global styles
+│   │   └── globals.css              # Tailwind config, custom utility classes
 │   │
-│   ├── types/                    # TypeScript definitions
-│   │   ├── actions.ts            # ActionResult<T> generic type
-│   │   ├── enums.ts              # Exported Prisma enums (Role, SaleStatus, etc.)
-│   │   ├── next-auth.d.ts        # Session type augmentation
-│   │   └── shared/               # Shared type definitions
+│   ├── generated/                   # Auto-generated (DO NOT EDIT)
+│   │   └── prisma/client/           # Prisma client types and models
+│   │       ├── client.d.ts          # Type definitions for all models
+│   │       └── models/              # Individual model type files
 │   │
-│   ├── styles/
-│   │   ├── globals.css           # Global Tailwind + custom CSS
-│   │   └── variables.css         # CSS custom properties
-│   │
-│   └── generated/
-│       └── prisma/
-│           └── client/           # @prisma/client auto-generated code
+│   └── middleware.ts                # NextAuth middleware for route protection
 │
 ├── prisma/
-│   ├── schema.prisma             # Prisma ORM schema (19 models, enums)
-│   └── seed.ts                   # Database seeding script
+│   ├── schema.prisma                # Prisma data model (19 models, enums)
+│   └── migrations/                  # Database migration files
 │
-├── public/                       # Static assets
+├── public/                          # Static assets
+│   ├── favicon.ico
+│   └── [other static files]
 │
-├── docs/                         # Project documentation
+├── docs/                            # Documentation
+│   └── [Architecture, setup, API docs]
 │
-├── package.json                  # Dependencies & scripts
-├── tsconfig.json                 # TypeScript configuration with @ alias
-├── next.config.ts                # Next.js configuration
-├── tailwind.config.ts            # Tailwind CSS config
-├── eslint.config.ts              # ESLint configuration
-│
-└── .planning/codebase/           # GSD planning documents (this file)
+├── next.config.ts                   # Next.js configuration (security headers, standalone output)
+├── tsconfig.json                    # TypeScript compiler options (@ alias, ES2022 target)
+├── postcss.config.mjs               # PostCSS for Tailwind
+├── eslint.config.mjs                # ESLint configuration
+├── package.json                     # Dependencies
+├── docker-compose.yml               # PostgreSQL + pgAdmin for local dev
+├── Dockerfile                       # Container image for production
+├── CLAUDE.md                        # Project instructions and domain context
+└── TESTING.md                       # Test strategy and examples
 ```
 
 ## Directory Purposes
 
-**src/app/(auth):**
-- Purpose: Public authentication pages (login)
-- Contains: Login page with credentials form
-- Key files: `login/page.tsx`
-- Access: Unauthenticated users only (redirects to /dashboard if logged in)
-
-**src/app/(dashboard):**
-- Purpose: Protected application routes for authenticated users
-- Contains: 12 feature modules (dashboard, desarrollos, lotes, personas, ventas, caja, cobranza, firmas, configuracion, auditoria, estadisticas, mensajes)
-- Access: Requires valid session + role-based permission
-
-**src/app/api:**
-- Purpose: API routes and serverless functions
-- Contains: Auth handler, health check, cron notifications
-- Key files:
-  - `auth/[...nextauth]/route.ts` - Auth provider routes
-  - `cron/notify-upcoming/route.ts` - Scheduled notification job
-  - `health/route.ts` - Deployment health verification
+**src/app:**
+- Purpose: Next.js App Router pages and layouts
+- Public routes: `(auth)/login`
+- Protected routes: Everything under `(dashboard)` (guarded by middleware + requireAuth)
+- API routes: `/api/auth`, `/api/cron`, `/api/health`
 
 **src/server/actions:**
-- Purpose: Server-side business logic as Next.js Server Actions
-- Pattern: Each file exports 3-5 functions prefixed "use server"
-- Examples:
-  - `sale.actions.ts` - createSale(), getSales(), getSaleById(), updateSaleStatus()
-  - `payment.actions.ts` - payInstallment(), payExtraCharge()
-  - `user.actions.ts` - getUsers(), createUser(), updateUser(), toggleUserActive()
-- All functions perform permission checks via `requirePermission()`
+- Purpose: Server Actions executed from client/server forms
+- Execution context: Server-only (secure, can access secrets)
+- Pattern: Each file exports functions that take FormData, return ActionResult
+- Security: Every action calls `requirePermission()` at the start
+- Side effects: Database mutations, email sending, audit logging, cache revalidation
 
 **src/server/models:**
-- Purpose: Data Access Layer wrapping Prisma queries
-- Pattern: Each model exports object with methods: findAll(), findById(), create(), update(), etc.
-- Examples:
-  - `sale.model.ts` - saleModel.findAll(params), saleModel.create(data)
-  - `user.model.ts` - userModel.findByEmail(), userModel.findAllSellers()
-- Used exclusively by server actions, never by client components
+- Purpose: Data access layer abstracting Prisma queries
+- Benefit: Reusable query patterns, specific `include/select` for each query type
+- Usage: Called from server actions and cron routes
+- Example: `personModel.findById(id)` includes all related sales, installments, cashMovements
 
 **src/lib:**
-- Purpose: Shared utilities and configuration
-- Core categories:
-  - **Auth:** auth.ts, auth.config.ts, auth-guard.ts, rbac.ts
-  - **Business Logic:** installment-generator.ts, installment-recalculator.ts, sale-helpers.ts, exchange-rate.ts
-  - **Utils:** format.ts, constants.ts, navigation.ts, utils.ts, prisma.ts
-  - **Communications:** email.ts, email-templates.ts
-
-**src/components:**
-- Purpose: React UI components
-- Structure:
-  - `ui/` - Unstyled shadcn/ui primitives (Button, Card, Dialog, Form, Input, Table, etc.)
-  - `shared/` - Domain-aware layout components (PageHeader, StatusBadge, Sidebar, Layout)
-  - Feature folders: Under `app/(dashboard)/*/`, `_components/` folders contain form-specific components
+- Purpose: Shared, non-domain-specific utilities
+- Categories:
+  - Auth: `auth.ts`, `auth.config.ts`, `auth-guard.ts`, `rbac.ts`
+  - Database: `prisma.ts`
+  - UI: `constants.ts`, `format.ts`, `utils.ts`, `navigation.ts`
+  - Domain logic: `installment-generator.ts`, `installment-recalculator.ts`, `sale-helpers.ts`
+  - Integrations: `email.ts`, `email-templates.ts`, `exchange-rate.ts`, `business-hours.ts`
 
 **src/schemas:**
-- Purpose: Zod validation schemas
-- Pattern: One schema per domain entity
-- Examples:
-  - `auth.schema.ts` - loginSchema (email, password)
-  - `sale.schema.ts` - saleCreateSchema (personId, lotId, totalPrice, etc.)
-  - `person.schema.ts` - personCreateSchema
+- Purpose: Zod schemas for input validation
+- When applied: In server actions via `.safeParse()` before database operations
+- Benefit: Type-safe validation, clear error messages, enumeration of valid values
 
 **src/types:**
-- Purpose: TypeScript type definitions
-- Key files:
-  - `actions.ts` - ActionResult<T> = { success: true; data?: T } | { success: false; error: string }
-  - `enums.ts` - Re-exported Prisma enums (Role, SaleStatus, LotStatus, etc.)
-  - `next-auth.d.ts` - Session type augmentation with user.role
-  - `shared/` - Shared domain types
+- Purpose: Central type definitions
+- Key exports:
+  - `enums.ts`: Domain enum objects (DevelopmentStatus, SaleStatus, Role, etc.)
+  - `actions.ts`: ActionResult<T> union type for server action responses
+  - `next-auth.d.ts`: Augmented types for Auth.js session
+
+**src/components/ui:**
+- Purpose: Unstyled shadcn/ui component library
+- Pre-built: button, card, dialog, form, input, select, table, dropdown, etc.
+- Usage: Imported and combined in feature-specific components
+
+**src/components/shared:**
+- Purpose: Cross-feature reusable components
+- Examples:
+  - `sidebar.tsx`: Role-aware navigation menu
+  - `data-table.tsx`: Generic table with sorting/filtering
+  - `page-header.tsx`: Standardized page title component
+  - `status-badge.tsx`: Colored status display
+  - `notification-bell.tsx`: Bell icon with unread count
 
 ## Key File Locations
 
 **Entry Points:**
-
-| File | Purpose |
-|------|---------|
-| `src/app/(dashboard)/dashboard/page.tsx` | Main dashboard with KPIs |
-| `src/app/(auth)/login/page.tsx` | Login form |
-| `src/app/api/auth/[...nextauth]/route.ts` | Auth handler |
+- `src/app/layout.tsx`: Root HTML layout, language="es", globals.css import
+- `src/app/(dashboard)/layout.tsx`: Dashboard wrapper with sidebar, auth check
+- `src/app/(auth)/login/page.tsx`: Login form with nextauth signIn action
+- `src/app/api/auth/[...nextauth]/route.ts`: NextAuth v5 route handler
+- `src/middleware.ts`: Auth middleware protecting dashboard routes
 
 **Configuration:**
-
-| File | Purpose |
-|------|---------|
-| `prisma/schema.prisma` | ORM schema (19 models, enums) |
-| `src/lib/auth.ts` | Next-Auth setup + handlers export |
-| `src/lib/auth.config.ts` | Auth callbacks, callbacks & pages config |
-| `src/lib/constants.ts` | Status labels, enums, defaults |
+- `tsconfig.json`: TypeScript paths alias `@/*` → `src/*`, target ES2022
+- `next.config.ts`: Security headers (X-Frame-Options: DENY, HSTS, etc.), standalone output
+- `prisma/schema.prisma`: 19 domain models with enums and relationships
 
 **Core Logic:**
-
-| File | Purpose |
-|------|---------|
-| `src/lib/installment-generator.ts` | Auto-generate payment schedules |
-| `src/lib/installment-recalculator.ts` | Recalculate on extra charge paid |
-| `src/lib/sale-helpers.ts` | Client-safe calculations for forms |
-| `src/lib/exchange-rate.ts` | Fetch USD/ARS from dolarapi.com |
+- `src/lib/auth.ts`: NextAuth initialization with Credentials provider
+- `src/lib/rbac.ts`: Role-based permission matrix (SUPER_ADMIN, ADMINISTRACION, FINANZAS, COBRANZA)
+- `src/lib/installment-generator.ts`: Core algorithm for sale payment schedules
+- `src/server/actions/sale.actions.ts`: Sale CRUD with installment auto-generation
+- `src/server/models/person.model.ts`: Person queries with all related data
 
 **Testing:**
-
-| File | Purpose |
-|------|---------|
-| `prisma/seed.ts` | Database seeding for development |
+- `TESTING.md`: Test strategy (unit, integration, e2e patterns)
+- `__tests__/`, `*.test.ts`, `*.spec.ts`: Test files (follow codebase pattern TBD)
 
 ## Naming Conventions
 
 **Files:**
-
-| Pattern | Example | Purpose |
-|---------|---------|---------|
-| `*.actions.ts` | `sale.actions.ts` | Server Actions (exported functions marked "use server") |
-| `*.model.ts` | `sale.model.ts` | Data Access Layer (Prisma wrappers) |
-| `*.schema.ts` | `sale.schema.ts` | Zod validation schemas |
-| `*.tsx` | `page.tsx`, `form.tsx` | React components |
-| `*-provider.tsx` | `theme-provider.tsx` | Context providers |
-| `*.config.ts` | `auth.config.ts` | Configuration objects |
+- Page files: `page.tsx` (index route), `layout.tsx` (layout wrapper), `error.tsx` (error boundary)
+- Components: `kebab-case.tsx` (e.g., `sidebar.tsx`, `page-header.tsx`, `mobile-sidebar.tsx`)
+- Actions: `*actions.ts` (e.g., `user.actions.ts`, `sale.actions.ts`)
+- Models: `*model.ts` (e.g., `person.model.ts`, `sale.model.ts`)
+- Schemas: `*schema.ts` (e.g., `user.schema.ts`, `sale.schema.ts`)
+- Utilities: `*utils.ts` or specific name (e.g., `installment-generator.ts`, `email-templates.ts`)
 
 **Directories:**
-
-| Pattern | Example | Purpose |
-|---------|---------|---------|
-| `(route-group)` | `(dashboard)`, `(auth)` | Nextjs route groups (group without URL segment) |
-| `[dynamic]` | `[id]`, `[slug]` | Dynamic route parameters |
-| `_components` | `ventas/_components/sale-form.tsx` | Feature-local components (private to parent route) |
-| `_partials` | Not currently used | Reserved for sub-component patterns |
+- Feature routes: `[feature-name]` in `src/app/(dashboard)/` (e.g., `ventas`, `personas`, `desarrollos`)
+- Server code: `src/server/[layer]` (actions, models, services, controllers)
+- Components by scope: `src/components/[scope]` (ui, shared, specific features in `_components`)
 
 **Functions & Variables:**
+- Server actions: camelCase, start with verb (e.g., `createSale()`, `updateUser()`, `getSaleById()`)
+- Model methods: camelCase, query methods (e.g., `findAll()`, `findById()`, `findForCollection()`)
+- Utility functions: camelCase, descriptive (e.g., `generateInstallments()`, `formatCurrency()`)
+- Constants: UPPER_SNAKE_CASE (e.g., `MONTH_NAMES`, `DAYS_AHEAD`)
+- React components: PascalCase (e.g., `Sidebar`, `DataTable`, `PageHeader`)
 
-| Convention | Example |
-|-----------|---------|
-| camelCase | `calculateInstallmentPreview()`, `requirePermission()` |
-| UPPERCASE constants | `MONTH_NAMES`, `ALL_PERMISSIONS`, `SALE_STATUS_LABELS` |
-| Prefix for boolean | `isActive`, `isSeller`, `hasError` |
-| Prefix for action hooks | `use*` (React hooks only) |
-
-**Types:**
-
-| Convention | Example |
-|-----------|---------|
-| PascalCase | `type ActionResult<T>`, `interface FindAllParams` |
-| Enum names | `enum Role { SUPER_ADMIN, ADMINISTRACION, FINANZAS, COBRANZA }` |
+**Domain Models:**
+- Use singular names in code (Person, Sale, Lot, User) matching Prisma model names
+- Enum values: UPPER_SNAKE_CASE (e.g., SUPER_ADMIN, ADMINISTRACION, COBRANZA)
 
 ## Where to Add New Code
 
-**New Feature (e.g., new domain entity like "Promoter"):**
+**New Feature (e.g., Inventory Management):**
+1. Create folder: `src/app/(dashboard)/inventario/`
+2. Create files:
+   - `page.tsx` - List page with `requireAuth()` + `getInventories()` action call
+   - `nuevo/page.tsx` - Form page for creating new inventory
+   - `[id]/page.tsx` - Detail view
+   - `[id]/editar/page.tsx` - Edit form
+   - `_components/inventory-form.tsx` - Shared form component
+   - `_components/inventory-table.tsx` - Table display
+   - `_components/inventory-filters.tsx` - Filter controls
+3. Add server action: `src/server/actions/inventory.actions.ts`
+   - Export: `getInventories()`, `getInventoryById()`, `createInventory()`, `updateInventory()`, `deleteInventory()`
+   - Each action calls `requirePermission("inventory:view"` or `"inventory:manage")`
+4. Add model: `src/server/models/inventory.model.ts`
+   - Export object with `findAll()`, `findById()`, `create()`, `update()`, `delete()` methods
+5. Add schema: `src/schemas/inventory.schema.ts`
+   - Define Zod schema for create/update validation
+6. Add to Prisma schema: `prisma/schema.prisma`
+   - Define Inventory model with fields and relationships
+7. Add types: `src/types/enums.ts`
+   - Add InventoryStatus enum if needed
+8. Add constants: `src/lib/constants.ts`
+   - Add labels and colors for new enums
 
-1. **Database Model**
-   - Edit `prisma/schema.prisma` - add model Promoter with fields & relationships
-   - Run `npx prisma migrate dev` to generate migration
-   - Update `src/generated/prisma/client/` automatically
+**New Component/Module (Reusable):**
+- Shared: `src/components/shared/[component-name].tsx`
+- Feature-specific: `src/app/(dashboard)/[feature]/_components/[component-name].tsx`
+- UI primitive: `src/components/ui/[component-name].tsx` (if using shadcn/ui)
 
-2. **Data Access**
-   - Create `src/server/models/promoter.model.ts` with methods:
-     ```typescript
-     export const promoterModel = {
-       async findAll(params?: FindAllParams) { ... },
-       async findById(id: string) { ... },
-       async create(data: Prisma.PromoterCreateInput) { ... },
-       async update(id: string, data: Partial<Promoter>) { ... },
-     };
-     ```
+**New Utility Function:**
+- Domain logic: `src/lib/[domain]-[operation].ts` (e.g., `installment-recalculator.ts`)
+- Formatting: `src/lib/format.ts` (add function to existing file)
+- Constants/lookups: `src/lib/constants.ts` (add to existing file)
 
-3. **Business Logic**
-   - Create `src/server/actions/promoter.actions.ts` exporting:
-     ```typescript
-     "use server";
-     export async function getPromoters() { ... }
-     export async function createPromoter(_prevState, formData) { ... }
-     ```
-   - Each action starts with `await requirePermission("promoters:manage")`
+**New API Route/Endpoint:**
+- Location: `src/app/api/[namespace]/[route]/route.ts`
+- Examples:
+  - `src/app/api/cron/[job-name]/route.ts` - Scheduled jobs
+  - `src/app/api/webhooks/[provider]/route.ts` - External integrations
+  - `src/app/api/export/[format]/route.ts` - Data export endpoints
 
-4. **Validation**
-   - Create `src/schemas/promoter.schema.ts`:
-     ```typescript
-     export const promoterCreateSchema = z.object({
-       name: z.string().min(1),
-       email: z.string().email(),
-       // ...
-     });
-     ```
-
-5. **UI**
-   - Create route folder `src/app/(dashboard)/promotores/`
-     - `page.tsx` - List view, calls getPromoters()
-     - `nuevo/page.tsx` - Create view with PromoterForm
-     - `[id]/page.tsx` - Detail view
-     - `_components/promoter-form.tsx` - Form component with useFormState + createPromoter
-
-6. **Navigation**
-   - Update `src/lib/navigation.ts` to include promoter routes
-   - Update sidebar in `src/components/shared/sidebar.tsx`
-
-**New Server Action (e.g., approve payment):**
-
-1. In `src/server/actions/payment.actions.ts`, add:
-   ```typescript
-   export async function approvePayment(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
-     const session = await requirePermission("cash:manage");
-     const paymentId = parseFormString(formData, "paymentId");
-
-     if (!paymentId) return { success: false, error: "Payment ID required" };
-
-     const payment = await paymentModel.findById(paymentId);
-     if (!payment) return { success: false, error: "Payment not found" };
-
-     const updated = await paymentModel.updateStatus(paymentId, "APROBADO");
-     revalidatePath("/dashboard/caja");
-     return { success: true, data: updated };
-   }
-   ```
-
-2. In component, use useFormState:
-   ```typescript
-   const [state, formAction] = useFormState(approvePayment, initialState);
-   ```
-
-**New Client Component (e.g., dashboard card):**
-
-1. Create `src/components/shared/revenue-card.tsx`:
-   ```typescript
-   "use client";
-   import { Card } from "@/components/ui/card";
-
-   export function RevenueCard({ value }: { value: number }) {
-     return <Card>...</Card>;
-   }
-   ```
-
-2. Import in page: `import { RevenueCard } from "@/components/shared/revenue-card"`
-
-**Utilities:**
-
-**Shared helpers:**
-- String manipulation, number formatting → `src/lib/utils.ts`
-- Date/currency formatting → `src/lib/format.ts`
-- Status labels, enums → `src/lib/constants.ts`
-
-**Feature-specific helpers:**
-- Keep in domain file, e.g., sale-specific logic in `src/lib/sale-helpers.ts`
+**Database Migrations:**
+- Run: `npx prisma migrate dev --name [descriptive-name]`
+- Generated files stored in: `prisma/migrations/`
+- Never edit migration files manually
 
 ## Special Directories
 
-**src/generated:**
-- Purpose: Auto-generated code from Prisma and other tools
-- Generated: Yes (by `prisma generate`)
-- Committed: Yes (to git, for IDE type hints in CI)
-- Do NOT edit manually
+**src/generated/prisma/client:**
+- Purpose: Auto-generated Prisma client types (DO NOT EDIT)
+- Generated by: `npx prisma generate` (runs after schema.prisma changes)
+- Committed: YES (includes in version control)
+- Contains: TypeScript type definitions for all models, enums, client interface
 
-**src/app/api/cron:**
-- Purpose: Scheduled jobs (serverless functions)
-- Current: notify-upcoming signings cron
-- Generated: No
-- Committed: Yes
+**prisma/migrations:**
+- Purpose: Database schema version history
+- Generated by: `npx prisma migrate dev` when schema.prisma changes
+- Committed: YES (ensures team sync on schema)
+- Contains: SQL migration files numbered by timestamp
 
-**.planning/codebase:**
-- Purpose: GSD documentation (this directory)
-- Generated: No (created manually by agents)
-- Committed: Yes
-- Contents: ARCHITECTURE.md, STRUCTURE.md, CONVENTIONS.md, TESTING.md, CONCERNS.md, STACK.md, INTEGRATIONS.md
+**public/**
+- Purpose: Static assets (favicon, images, fonts)
+- Served at: Root URL path
+- Committed: YES (usually small files)
 
-**prisma/**
-- Purpose: ORM configuration and migrations
-- Generated: migrations/ auto-generated
-- Committed: Yes (schema + migrations)
+**.next/**
+- Purpose: Next.js build output (generated after `npm run build`)
+- Committed: NO (.gitignore)
+- Contains: Compiled pages, compiled client JavaScript, server assets
+
+**node_modules/**
+- Purpose: Third-party dependencies
+- Committed: NO (.gitignore)
+- Regenerated: `npm install` from package-lock.json
 
 ---
 
-*Structure analysis: 2026-02-25*
+*Structure analysis: 2026-02-26*

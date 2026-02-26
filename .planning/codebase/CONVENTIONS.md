@@ -1,220 +1,233 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-02-25
+**Analysis Date:** 2026-02-26
 
 ## Naming Patterns
 
 **Files:**
-- Components: PascalCase with `.tsx` extension (e.g., `LoginForm.tsx`, `DataTable.tsx`)
-- Models (data access): kebab-case suffix `.model.ts` (e.g., `user.model.ts`, `sale.model.ts`)
-- Actions (server actions): kebab-case suffix `.actions.ts` (e.g., `auth.actions.ts`, `person.actions.ts`)
-- Schemas (validation): kebab-case suffix `.schema.ts` (e.g., `person.schema.ts`, `sale.schema.ts`)
-- Page components: `page.tsx` for main routes, `layout.tsx` for layouts
-- Internal components: underscore prefix `_components/` directory with PascalCase filenames
-- Utility files: kebab-case (e.g., `auth-guard.ts`, `installment-generator.ts`)
+- Server actions: kebab-case with `.actions.ts` suffix → `sale.actions.ts`, `payment.actions.ts`
+- Models/data access: kebab-case with `.model.ts` suffix → `sale.model.ts`, `person.model.ts`
+- Schemas: kebab-case with `.schema.ts` suffix → `auth.schema.ts`, `sale.schema.ts`
+- Components: PascalCase with optional functional grouping → `SaleForm.tsx`, `PayInstallmentDialog.tsx`
+- Component collections in `_components/`: grouped by feature with descriptive names
+- Pages: directory structure mirrors URL routes using `[slug]` and `[id]` for dynamic segments
+- Utility functions: kebab-case → `installment-generator.ts`, `exchange-rate.ts`
+- React hooks: camelCase, no prefix convention (not using `useXxx` prefix for custom hooks uniformly)
 
 **Functions:**
-- Async data fetchers: `get*` prefix (e.g., `getPersons()`, `getSaleById()`, `getTodayExchangeRate()`)
-- Server actions: `*Action` suffix (e.g., `loginAction()`, `createPerson()`, `updateDevelopment()`)
-- Model methods: camelCase without prefix (e.g., `findAll()`, `findById()`, `create()`, `update()`)
-- Helper functions: camelCase descriptive names (e.g., `generateInstallments()`, `overdueStatus()`)
-- Permission checks: `*Permission` pattern (e.g., `requirePermission()`, `checkPermissionDb()`)
-- React components: PascalCase (e.g., `LoginForm`, `DataTable`, `PageHeader`)
-- Hooks and custom functions in components: `use*` for hooks (though hooks dir is empty; custom hooks are in-component)
+- Action functions: camelCase starting with verb → `loginAction()`, `createSale()`, `payInstallment()`
+- Model methods: camelCase, object-based exports → `saleModel.findAll()`, `personModel.findById()`
+- Utility functions: camelCase, self-documenting names → `generateInstallments()`, `formatCurrency()`
+- Helper functions: prefixed with context where needed → `getTodayString()`, `parseFormAmount()`
+- RBAC check functions: explicit and clear → `hasPermission()`, `checkPermissionDb()`, `requirePermission()`
 
 **Variables:**
-- Constants: UPPER_SNAKE_CASE (e.g., `DEVELOPMENT_STATUS_LABELS`, `DEVELOPMENT_TYPE_LABELS`)
-- State/data: camelCase (e.g., `isEditing`, `isPending`, `defaultValues`)
-- Form data: camelCase (e.g., `formData.get("firstName")`)
-- Objects/records: camelCase (e.g., `personCreateSchema`, `actionResult`)
-- Boolean prefixes: `is*`, `has*`, `can*` (e.g., `isActive`, `hasLotsWithSales`, `canDelete`)
+- Local constants: UPPER_SNAKE_CASE for enum-like collections → `CREATION_STATUSES`, `MONTH_NAMES`
+- Database records: singular nouns → `sale`, `person`, `installment`, `cashMovement`
+- Collections: plural or descriptive context → `sales`, `persons`, `permissions`, `dbPermissions`
+- React state: camelCase, boolean `is*` prefix → `isPending`, `isLoading`, `isOpen`
+- Form state: matches schema fields → `firstName`, `totalPrice`, `firstInstallmentMonth`
+- Decimals/BigInt handling: explicitly cast to `Number()` for serialization → `Number(installment.amount)`
 
 **Types:**
-- TypeScript types: PascalCase with explicit `Type` or `Input`/`Output` suffix (e.g., `LoginInput`, `ActionResult`, `PersonCreateInput`, `PersonUpdateInput`)
-- Enum-like objects: PascalCase matching Prisma enums (e.g., `DevelopmentStatus`, `PersonType`, `SaleStatus`)
-- Interface naming: Prefix with `I` or just PascalCase without suffix (observed: mostly just PascalCase like `FindAllParams`)
-- Props interfaces: `Props` suffix (e.g., `DevelopmentFormProps` would be used; observed as inline interfaces)
+- Type definitions: PascalCase → `ActionResult`, `SaleCreateInput`, `FindAllParams`
+- Enums (client-safe): PascalCase exported from `/src/types/enums.ts` → `SaleStatus`, `PersonType`, `Role`
+- Type unions: PascalCase with clear naming → `Permission`, `DevelopmentStatus`, `MovementType`
+- Prisma model types: imported from `@/generated/prisma/client/client` → `SaleStatus`, `LotStatus`
+- Interface props: `Props` suffix or descriptive name → `Props`, `FindAllParams`, `GenerateInstallmentsParams`
 
 ## Code Style
 
 **Formatting:**
-- TypeScript compiler: `strict: true` in `tsconfig.json`
-- Target: ES2022
-- Indentation: 2 spaces (inferred from code samples)
-- Line length: No explicit config, but under 100 chars observed in most code
-- Module system: ES modules (`type: "module"` in package.json)
+- ESLint + Next.js rules (`next/core-web-vitals`, `next/typescript`) configured in `eslint.config.mjs`
+- No explicit Prettier config — relies on ESLint defaults
+- Indentation: 2 spaces (inferred from codebase)
+- Line width: no hard limit enforced, but keep functions readable (60-80 lines max)
+- Trailing commas: used in objects/arrays for better diffs
 
 **Linting:**
-- ESLint: v9 with flat config (`eslint.config.mjs`)
-- Config extends: `next/core-web-vitals` and `next/typescript`
-- No custom rule overrides detected; uses Next.js defaults
-- Prettier config: Not explicitly configured (relies on Next.js defaults)
-
-**Code organization:**
-- Imports grouped by source: React/Next → third-party → local aliases → relative
-- One export per file (typical pattern observed)
-- Export style: Named exports for models/actions (e.g., `export const userModel = { ... }`)
-- Component files: Default export for React components (e.g., `export function LoginForm() {}`)
+- Tool: ESLint 9 with Next.js preset
+- Config file: `eslint.config.mjs` (flat config format)
+- Key rules: enforced by Next.js preset (no React.FC, prefer `React.ReactNode`, etc.)
+- Run: `npm run lint`
+- No explicit pre-commit hooks configured, but Next.js build validates on deployment
 
 ## Import Organization
 
 **Order:**
-1. React/Next.js imports (`react`, `next/*`)
-2. Third-party packages (`zod`, `@hookform/*`, `date-fns`)
-3. Type imports (using `import type` for TS-only)
-4. Alias imports (`@/schemas`, `@/lib`, `@/components`, `@/server`)
-5. Relative imports (rarely used, prefer aliases)
+1. React and framework imports (`react`, `next/*`, `next-auth`)
+2. Third-party libraries (`zod`, `date-fns`, `react-hook-form`, `sonner`, etc.)
+3. Internal absolute imports using `@/*` path aliases
+4. Grouped by subsystem: `@/lib/`, `@/schemas/`, `@/server/`, `@/types/`, `@/components/`
 
 **Path Aliases:**
-- `@/*` → `./src/*` (configured in tsconfig.json)
-- All imports use `@/` prefix consistently
-- Common aliases used:
-  - `@/schemas/` - Zod validation schemas
-  - `@/lib/` - Utility functions and helpers
-  - `@/components/` - React components
-  - `@/server/` - Server-only code (actions, models, controllers)
-  - `@/types/` - TypeScript type definitions
-  - `@/generated/` - Generated Prisma client types
+- `@/*` → `./src/*` (configured in `tsconfig.json`)
+- No other aliases; all imports use the `@/` prefix
+- Example: `import { prisma } from "@/lib/prisma"` not `../../../lib/prisma`
+
+**Barrel Files:**
+- Not consistently used; most imports directly reference source files
+- Components import UI primitives from `@/components/ui/button`, etc.
+- Models are typically single imports: `import { saleModel } from "@/server/models/sale.model"`
 
 ## Error Handling
 
 **Patterns:**
-- Server actions return `ActionResult<T>` type:
-  ```typescript
-  export type ActionResult<T = void> =
-    | { success: true; data?: T }
-    | { success: false; error: string };
-  ```
-- Validation: Use `schema.safeParse()` and return first error message
-- Prisma errors: Catch `Prisma.PrismaClientKnownRequestError` for constraint violations
-  - Example: Check `error.code === "P2002"` for unique constraint, extract field from `error.meta?.target`
-- Auth errors: Catch `AuthError` from next-auth separately
-- Throw unhandled errors: `throw error` for unexpected exceptions
-- Client feedback: Use `toast` from `sonner` for success/error messages
-- Form state: Track with `useActionState` hook for async form submission
+- Server actions return `ActionResult<T>` union type → `{ success: true; data?: T } | { success: false; error: string }`
+- Form parsing uses safe/guard pattern: check nulls, parse types, validate before using
+- Validation errors: Zod schema `.safeParse()` returns error messages to client
+- Auth errors: `AuthError` from `next-auth` caught explicitly, generic fallback to "Credenciales inválidas"
+- Database errors: wrapped in try-catch, logged with `console.error()`, return safe error message to client
+- Permission denied: throws `Error` with message, caught by middleware redirect to login
+- Transaction errors: wrapped in `prisma.$transaction()`, atomic rollback on any failure
+- Audit logging: gracefully degrades if logging fails — never breaks main operation (try-catch-log pattern)
+- Email failures: logged but don't break request flow, warnings logged for missing SMTP config
 
-**Example pattern:**
-```typescript
-export async function createPerson(
-  _prevState: ActionResult,
-  formData: FormData
-): Promise<ActionResult> {
-  const session = await requirePermission("persons:manage");
-
-  const parsed = personCreateSchema.safeParse(raw);
-  if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0].message };
-  }
-
-  try {
-    await personModel.create({...});
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return { success: false, error: `Ya existe una persona...` };
-    }
-    throw error;
-  }
-
-  revalidatePath("/personas");
-  return { success: true };
-}
-```
+**Error Messages:**
+- Client-facing: Spanish language, user-friendly descriptions
+- Technical: logged to console with context prefix like `[cron]`, `[email]`, `[audit]`
+- Never leak sensitive information in error messages
 
 ## Logging
 
-**Framework:** `console.*` methods (no logger framework detected)
+**Framework:** Native `console` object (no external logger library)
 
 **Patterns:**
-- Not extensively used in codebase; minimal logging observed
-- Auth errors logged as user-friendly messages
-- Server-side validation errors return user messages via ActionResult
-- No structured logging or log aggregation detected
+- **Info/Success**: `console.log()` with context prefix → `console.log("[email] Email sent to...")`
+- **Warnings**: `console.warn()` for non-critical issues → missing SMTP config, missing audit userId
+- **Errors**: `console.error()` with context and error details → `console.error("[cron] Failed to query...", error)`
+- Context prefixes: `[email]`, `[cron]`, `[audit]`, `[Dashboard error:]` for easy filtering
+- No structured logging — simple string messages, error objects logged as second parameter
 
-**Guidelines:**
-- Use `console.error()` only for unexpected exceptions (then thrown)
-- Validation errors: Return user-friendly messages, don't log
-- Database errors: Handle gracefully with context-specific messages
+**When to Log:**
+- Async operations completion: email sent, cron job executed, audit log created
+- External API calls: dolarapi rates fetched, SMTP connection attempted
+- Error conditions: validation failures, database errors, permission denials
+- Warnings: non-standard conditions like missing environment config
 
 ## Comments
 
 **When to Comment:**
-- TypeScript strict mode and self-documenting code reduce comment need
-- Comments observed only in complex calculations (e.g., installment recalculation)
-- Inline comments rare; code structure preferred
+- Complex business logic: like overdue status computation or installment recalculation
+- Non-obvious algorithm steps: like date arithmetic with month overflow in `generateInstallments()`
+- Implementation decisions: why Decimal types are converted to Number for serialization
+- Temporary workarounds: mark with TODO/FIXME if intentional technical debt
+- Not needed: self-documenting code, straightforward CRUD operations, type signatures
 
 **JSDoc/TSDoc:**
-- Not extensively used
-- Type signatures via TypeScript handle most documentation
-- Minimal JSDoc comments observed in codebase
+- Used selectively on public functions and complex utilities
+- Documented in `installment-generator.ts`: shows parameter object structure and behavior
+- Not universally applied; most functions lack JSDoc comments
+- When present, follows standard format with `@param`, `@returns`, description
 
 ## Function Design
 
 **Size:**
-- Action functions: 50-150 lines (includes validation, error handling, revalidation)
-- Model methods: 5-20 lines (delegated to Prisma)
-- Component functions: Variable, but keep business logic extracted to actions/models
+- Keep functions focused on single responsibility (CRUD, validation, business logic separation)
+- Most server actions 50-150 lines; complex ones like `payInstallment()` split into helper functions
+- Helper functions within actions: `parseFormAmount()`, `parseFormString()`, `parseFormDate()` for input handling
 
 **Parameters:**
-- Model methods: Use typed interfaces for complex params (e.g., `FindAllParams` interface)
-- Actions: Accept `FormData` from form submission
-- Server actions: Always receive `_prevState: ActionResult` and `formData: FormData`
-- Functions use destructuring for named parameters
+- Prefer objects over positional args for complex operations → `GenerateInstallmentsParams` object
+- Server actions: first param `_prevState`, second param `FormData`
+- Optional params grouped in interfaces → `FindAllParams` with optional `search`, `status`, `developmentId`
+- Use `undefined` over `null` for optional values in function interfaces
 
 **Return Values:**
-- Server actions: Always return `ActionResult<T>`
-- Models/queries: Return Prisma query results directly
-- Components: Return `React.ReactNode` or JSX
+- Server actions: always return `ActionResult` type for consistency
+- Models: return Prisma query results or null
+- Business logic: return computed values (Decimal, arrays, objects)
+- Guards/checkers: return boolean or throw Error
+- Never mix `null` and `undefined` — standardize to the codebase pattern (mixing occurs in schema transforms)
 
 ## Module Design
 
 **Exports:**
-- Models: `export const modelName = { method1, method2, ... }`
-- Actions: `export async function actionName(...)`
-- Schemas: `export const schemaName = z.object(...)` and `export type InputType = z.infer<typeof schemaName>`
-- Components: `export function ComponentName(...)`
-- Utilities: Mix of `export const` and `export function`
+- Server actions: named exports of async functions → `export async function getSales()`
+- Models: single default-like export using object literal → `export const saleModel = { async findAll() {...} }`
+- Schemas: named exports of Zod schemas and inferred types → `export const saleCreateSchema = z.object(...)`
+- Constants: named exports of Maps/Records → `export const SALE_STATUS_LABELS: Record<...> = {...}`
+- Types: re-export from Prisma generated client or define as named exports
 
 **Barrel Files:**
-- Not used; each file imports directly from its source
-- No `index.ts` files to re-export multiple items
+- Not used for models or actions; each file imported directly
+- Component barrel files implicit via `_components/` directory organization
 
-**Organization in server/actions:**
-- One file per domain entity (person.actions.ts, sale.actions.ts, etc.)
-- Contains all async actions for that entity (get, create, update, toggle, etc.)
+## Server Action Patterns
 
-## Validation
+**Core Structure:**
+1. `"use server"` directive at file top
+2. Import guards/auth → `requirePermission()`
+3. Type definition for return type → `ActionResult`
+4. Main exported async action function with signature `(_prevState: ActionResult, formData: FormData)`
+5. Input parsing: extract and type-check FormData values
+6. Validation: Zod `safeParse()` with error return
+7. Permission check: call `requirePermission("resource:action")` before mutation
+8. Business logic: transaction-wrapped mutations or external calls
+9. Side effects: `revalidatePath()`, `logAction()` after success
+10. Error handling: try-catch with ActionResult error return
 
-**Framework:** Zod v3.25
+**Example Flow:**
+```typescript
+export async function payInstallment(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const session = await requirePermission("cash:manage");
+
+  // Parse inputs
+  const installmentId = parseFormString(formData, "installmentId");
+  // Validate
+  if (!installmentId) return { success: false, error: "..." };
+
+  try {
+    // Transaction
+    const result = await prisma.$transaction(async (tx) => {
+      // mutations
+    });
+    // Side effects
+    await logAction("Installment", installmentId, "PAYMENT");
+    revalidatePath("/dashboard/ventas");
+    return { success: true };
+  } catch (error) {
+    console.error("Payment failed:", error);
+    return { success: false, error: "Error procesando pago" };
+  }
+}
+```
+
+## Form Handling (Client Components)
 
 **Pattern:**
-- Define schema in `schemas/*.schema.ts` files
-- Use `z.object()` to define shapes
-- Custom refinements for complex validation (e.g., DNI/CUIT regex)
-- Export inferred type: `export type PersonCreateInput = z.infer<typeof personCreateSchema>`
-- Parse with `schema.safeParse(data)` to get `success` boolean
-- First error message: `parsed.error.errors[0].message`
+- Use `react-hook-form` with Zod resolver
+- Use `useActionState` hook to call server action
+- Form submission triggers async action with FormData
+- State updates trigger toast notifications (via `sonner`)
+- On success, navigate with `useRouter().push()` or `revalidatePath()`
 
 **Example:**
 ```typescript
-export const personCreateSchema = z.object({
-  type: z.nativeEnum(PersonType),
-  firstName: z.string().min(1, "El nombre es requerido").max(100),
-  dni: z.string().optional().or(z.literal(""))
-    .transform((v) => (v ? v : undefined))
-    .pipe(z.string().regex(/^\d{7,8}$/, "DNI debe tener 7 u 8 dígitos").optional()),
+const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
+  (_prev, formData) => createSale({ success: false, error: "" }, formData),
+  null
+);
+
+const form = useForm<SaleCreateInput>({
+  resolver: zodResolver(saleCreateSchema),
+  defaultValues: {...}
 });
+
+useEffect(() => {
+  if (state?.success) {
+    toast.success("Venta creada");
+    router.push("/dashboard/ventas");
+  }
+  if (state?.error) {
+    toast.error(state.error);
+  }
+}, [state]);
 ```
-
-## Authorization
-
-**Pattern:** Permission-based guard
-
-- Function: `await requirePermission("permission:scope")`
-- Returns `session` if allowed, throws `Error` if denied
-- Permissions checked at action function level
-- Format: `entity:action` (e.g., `persons:view`, `sales:manage`, `cash:view`)
-- Database-backed: `checkPermissionDb(role, permission)` checks role-permission matrix
 
 ---
 
-*Convention analysis: 2026-02-25*
+*Convention analysis: 2026-02-26*

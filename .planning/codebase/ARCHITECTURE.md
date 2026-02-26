@@ -1,287 +1,270 @@
 # Architecture
 
-**Analysis Date:** 2026-02-25
+**Analysis Date:** 2026-02-26
 
 ## Pattern Overview
 
-**Overall:** Next.js App Router + Server Actions (N-tier layered architecture)
+**Overall:** Layered Server-Driven Architecture with Next.js 15 App Router
 
 **Key Characteristics:**
-- Monolithic full-stack application with server-side business logic
-- Server Actions for all mutations (no traditional API routes except auth/cron)
-- Thick server layer (models → actions) with thin client components
-- Role-Based Access Control (RBAC) with permission-based authorization
-- Dual-currency tracking (USD/ARS) with daily exchange rates fetched from external API
-- Installment auto-generation and recalculation for real estate financing workflows
+- **Server-First**: Heavy use of Server Components and Server Actions; minimal client-side state management
+- **Modular Layers**: Clear separation between routes (App Router), server actions, models, and UI components
+- **Type-Safe**: Full TypeScript coverage with Prisma-generated types and Zod validation schemas
+- **RBAC Integrated**: Permission checks (`requirePermission`) baked into server actions and API routes
+- **Domain-Driven**: Organization reflects real estate domain (sales, lots, persons, cash movements, signings)
 
 ## Layers
 
-**Presentation Layer (Client):**
-- Purpose: Render UI components and capture user input; minimal business logic
-- Location: `src/app/(dashboard)/*` pages and `src/components/`
-- Contains: Next.js page components, shadcn/ui components, React forms with react-hook-form
-- Depends on: Server Actions, shared utilities, types
-- Used by: End users via browser
+**Presentation Layer (App Router + Components):**
+- Purpose: Server-rendered pages with shadcn/ui components; minimal interactivity
+- Location: `src/app/(auth)`, `src/app/(dashboard)/[feature]`
+- Contains: Page components (async), feature-specific components in `_components/`, layout wrappers
+- Depends on: Server Actions, Models (via server-side queries), auth-guard, types
+- Used by: End users via Next.js routing
 
-**Server Action Layer (Business Logic):**
-- Purpose: Execute all business operations as transactional server actions; enforce permissions
-- Location: `src/server/actions/*.actions.ts` (23+ action files)
-- Contains: "use server" functions that handle domain workflows (sale creation, payment processing, installment generation)
-- Depends on: Models (data access), auth-guard, Prisma ORM, utility functions
-- Used by: Client forms via POST submissions, API routes, admin scripts
+**API Layer (Route Handlers):**
+- Purpose: Webhook endpoints, cron jobs, health checks
+- Location: `src/app/api/auth/[...nextauth]`, `src/app/api/cron/notify-upcoming`, `src/app/api/health`
+- Contains: GET/POST handlers with bearer token auth (CRON_SECRET)
+- Depends on: Models, services, notificationModel, sendEmail
+- Used by: External cron services, NextAuth, monitoring systems
+
+**Server Actions Layer:**
+- Purpose: Encapsulates all business logic mutations and queries; bridges client components to database
+- Location: `src/server/actions/*.actions.ts` (21 files: user, sale, person, cash-movement, etc.)
+- Contains: Async functions exported with `"use server"` directive; each action wraps requirePermission check
+- Pattern: FormData parsing → Zod validation → model method call → revalidatePath → ActionResult
+- Depends on: Models, schemas, auth-guard, lib utilities, audit-log.actions
+- Used by: Client/Server components via form submissions or direct calls
 
 **Data Access Layer (Models):**
-- Purpose: Encapsulate Prisma queries and provide clean DAL interface
-- Location: `src/server/models/*.model.ts` (19 model files)
-- Contains: Prisma wrappers that construct queries with type safety
-- Depends on: Prisma client, enums, types
-- Used by: Server Actions exclusively
+- Purpose: Prisma wrapper functions; isolates database queries and business-specific includes
+- Location: `src/server/models/*.model.ts` (19 files: person, sale, lot, installment, etc.)
+- Contains: Object exports with methods: `findAll`, `findById`, `create`, `update`, `toggleActive`
+- Pattern: Each model wraps Prisma client; handles `.include()` and `.select()` for related data
+- Example: `personModel.findById()` includes sales with installments, extraCharges, and cashMovements
+- Depends on: `prisma` singleton, Prisma type definitions
+- Used by: Server actions and cron routes
 
-**Support Layers:**
+**Business Logic Layer (Utilities in lib/):**
+- Purpose: Domain logic, calculations, transformations not tied to database
+- Location: `src/lib/*.ts` (16 files: installment-generator, exchange-rate, email, auth, rbac, etc.)
+- Key functions:
+  - `generateInstallments()`: Computes installment due dates and amounts from sale terms
+  - `recalculateInstallments()`: Adjusts remaining installments after refuerzo payment
+  - `checkPermissionDb()`: Queries role permissions, falls back to hardcoded defaults
+  - `sendEmail()`: SMTP integration with email templates
+- Depends on: prisma (for permission queries), external APIs (dolarapi for exchange rates)
+- Used by: Server actions, API routes, models
 
-**Auth & RBAC:**
-- Location: `src/lib/auth.ts`, `src/lib/auth.config.ts`, `src/lib/auth-guard.ts`, `src/lib/rbac.ts`
-- Purpose: Next-Auth v5 integration, credential provider, session management, permission checks
-- Key exports: `requireAuth()`, `requirePermission(permission)`, `checkPermissionDb(role, permission)`
+**Schema Validation:**
+- Purpose: Zod schemas for runtime input validation
+- Location: `src/schemas/*.schema.ts` (10 files: sale, person, user, auth, etc.)
+- Pattern: One schema per domain model; used in server actions before database operations
+- Example: `saleCreateSchema` validates lotId, personId, totalPrice, currency, etc.
+- Depends on: Zod library, enums from `types/enums.ts`
+- Used by: Server actions
 
-**Utilities & Helpers:**
-- Location: `src/lib/*.ts`
-- Core files:
-  - `installment-generator.ts` - Generate installment schedules for sales
-  - `installment-recalculator.ts` - Recalculate installments when extra charges are paid
-  - `sale-helpers.ts` - Client-safe sale preview calculations
-  - `exchange-rate.ts` - Fetch daily USD/ARS rates from dolarapi.com
-  - `format.ts` - Number/date formatting utilities
-  - `constants.ts` - Enums and labels (SALE_STATUS_LABELS, SIGNING_STATUS_LABELS)
-
-**Persistence:**
-- Database: PostgreSQL via Prisma ORM
-- Schema location: `prisma/schema.prisma`
-- Client generation: `src/generated/prisma/client/`
-- Key entities: User, Development, Lot, Sale, Installment, ExtraCharge, CashMovement, ExchangeRate, PaymentReceipt, SigningSlot, Person, Message, Notification, AuditLog
+**Shared Utilities:**
+- Purpose: Cross-cutting concerns (formatting, constants, navigation, types)
+- Location: `src/lib/` (utils.ts, constants.ts, format.ts, navigation.ts) and `src/types/`
+- Contains: Date formatting, currency formatting, navigation menu structure, domain enums, action result types
+- Used by: Components, models, actions, all layers
 
 ## Data Flow
 
-**1. Sale Creation (Normal Flow):**
+**Read Flow (Page Load):**
 
-```
-User fills SaleForm (client)
-  ↓ [React Hook Form validation]
-  ↓ form.action = createSale() [server action]
-  → requirePermission("sales:manage")
-  → saleCreateSchema validation (Zod)
-  → saleModel.create(data) [insert Sale to DB]
-  → generateInstallments() [calculate payment schedule]
-  → prisma.installment.createMany() [bulk insert]
-  → saleModel.updateStatus("ACTIVA")
-  → lotModel.updateStatus("VENDIDO")
-  → revalidatePath("/dashboard/ventas")
-  ↓ [UI reloads with success toast]
-  ✓ Sale with N installments now in database
-```
+1. User navigates to `/dashboard/ventas`
+2. Next.js renders Server Component `src/app/(dashboard)/ventas/page.tsx`
+3. Page calls `getSales()` server action via direct function call
+4. `getSales()` checks `requirePermission("sales:view")` → queries `saleModel.findAll()`
+5. `saleModel.findAll()` executes Prisma query with includes (lot, development, person, seller, installment counts)
+6. Results returned to page, serialized as JSON, sent to client
+7. Page renders `<SalesTable>` with client component wrappers for interactivity
 
-**2. Payment Collection (Critical Flow):**
+**Write Flow (Create Sale):**
 
-```
-Cobranza selects Installment in UI
-  ↓ payInstallment(formData) [server action]
-  → requirePermission("cash:manage")
-  → Parse amount, currency, date
-  → fetchExchangeRate(date) [get USD/ARS for that day]
-  → Create CashMovement (type: CUOTA, installmentId, exchangeRateId)
-  → installment.status = "PAGADA" (or "PARCIAL" if partial)
-  → revalidatePath() [revalidate caja, ventas, estadísticas]
-  ↓ [Movement appears in Caja, Estadísticas updates]
-  ✓ Payment recorded with historical exchange rate
-```
+1. User fills form in `SaleFormDialog` (client component wrapping server action)
+2. Form calls `createSale(formData)` server action
+3. Server action:
+   - Parses FormData → extracts fields
+   - Validates via `saleCreateSchema.safeParse()`
+   - Checks `requirePermission("sales:manage")`
+   - Validates lot availability and relationship
+   - Calls `generateInstallments()` to compute installment schedule
+   - Opens Prisma transaction: creates Sale, Installments, updates Lot.status, updates cashBalance
+   - Logs action via `logAction()`
+   - Returns `{ success: true }` or `{ success: false, error: "..." }`
+4. Client-side form catches result, shows toast, closes dialog
+5. `revalidatePath("/dashboard/ventas")` invalidates next.js cache
+6. Page re-renders with fresh data on next navigation
 
-**3. Extra Charge + Installment Recalculation:**
+**Cron Job Flow (Notify Upcoming):**
 
-```
-Admin creates ExtraCharge (refuerzo) for Sale
-  ↓ createExtraCharge() [server action]
-  → ExtraCharge inserted with amount, dueDate, saleId
-  → When paid → CashMovement(type: REFUERZO, extraChargeId, exchangeRateId)
-  ↓ [Trigger installment recalculation?]
-  → recalculateInstallments(saleId) called manually or by action
-  → Fetch unpaid installments
-  → New total = (remaining balance) / (count of pending installments)
-  → Update each pending installment.amount + .originalAmount
-  ✓ Remaining payments now spread equally
-```
-
-**4. Provider Transaction (Permuta/Cesión):**
-
-```
-Admin selects Provider in PersonForm
-  → Seller: creates Person(type: PROVEEDOR)
-  ↓ createSale(totalPrice: 0, status: CESION)
-  → No installments created (totalInstallments = 0)
-  → CashMovement NOT created (no cash involved)
-  → Lot.status = "PERMUTA"
-  → Notes field documents the property/service exchanged
-  ✓ Transaction recorded for audit, no cash movement
-```
+1. External cron service calls GET `/api/cron/notify-upcoming` with `Authorization: Bearer {CRON_SECRET}`
+2. Route handler validates bearer token
+3. Runs three notification flows in parallel:
+   - Find upcoming extra charges (cuotas de refuerzo) due within 3 days via `cronModel.findUpcomingExtraCharges()`
+   - Find overdue installments via `cronModel.findOverdueInstallments()`
+   - Find upcoming signings via `cronModel.findUpcomingSignings()`
+4. For each item:
+   - Create notification via `notificationModel.createForAllUsers()`
+   - Send email via `sendEmail()` if person/seller has email
+   - Mark as notified to prevent duplicates
+5. Returns JSON with counters and details
 
 **State Management:**
-- No Redux/Zustand at application level
-- Prisma Session used for N+1 query batching in complex operations
-- Zod schemas define and validate data contracts
-- React Hook Form manages form state client-side (components/*/forms)
-- RevalidatePath triggers ISR (Incremental Static Regeneration) for dashboard snapshots
+
+- **Minimal**: No Redux, Zustand, or Context providers for business state
+- **Cache**: Next.js cache revalidation via `revalidatePath()` after mutations
+- **Session**: Stored in JWT token via Auth.js v5, accessible via `auth()` function
+- **UI State**: Form state managed locally in client components using React hooks
+- **Database State**: Single source of truth via PostgreSQL + Prisma
 
 ## Key Abstractions
 
-**Sale (aggregated entity):**
-- Purpose: Central concept unifying lot assignment, customer, pricing, payment schedule
-- Examples: `src/server/models/sale.model.ts`, `src/server/actions/sale.actions.ts`
-- Pattern: Contains lot (1:1), person (1:1), multiple installments (1:N), multiple extra charges (1:N)
-- Key methods: create, updateStatus, getSaleById (with full context)
+**Server Action Pattern:**
+- Purpose: Encapsulate mutations and complex queries with built-in security
+- Examples: `createSale()`, `updateUser()`, `createCashMovement()`
+- Pattern: `async (prevState, formData) => Promise<ActionResult>`
+- Security: Every action calls `requirePermission()` at the top
 
-**CashMovement (unified transaction ledger):**
-- Purpose: Record all money movements (14 types: CUOTA, REFUERZO, COMISION, SUELDO, etc.)
-- Examples: `src/server/models/cash-movement.model.ts`, `src/server/actions/cash-movement.actions`
-- Pattern: Single movement table with typed enum + flexible associations (installmentId OR extraChargeId OR userId)
-- Trazability: Always includes createdById (User), exchangeRateId (for ARS/USD conversion)
+**Model Objects:**
+- Purpose: Reusable database queries with business-specific includes
+- Pattern: Export named object with async methods
+- Example: `personModel.findById()` includes all related sales, installments, cashMovements
+- Benefit: Avoids duplicating `.include()` logic across multiple actions
 
-**Installment (payment schedule):**
-- Purpose: Represent monthly payment obligations
-- Examples: `src/server/models/installment.model.ts`, `src/lib/installment-generator.ts`
-- Pattern: Auto-generated when Sale created; can be recalculated when ExtraCharge paid
-- Status lifecycle: PENDIENTE → PARCIAL → PAGADA / VENCIDA (computed on read)
+**Zod Schemas:**
+- Purpose: Runtime validation before database operations
+- Pattern: Schema mirrors form fields; used in server actions before persist
+- Example: `saleCreateSchema` validates required fields, numeric ranges, enum values
+- Benefit: Type-safe and provides clear error messages
 
-**ExchangeRate (daily snapshot):**
-- Purpose: Capture USD/ARS exchange rates daily for historical audit trail
-- Examples: `src/server/models/exchange-rate.model.ts`, `src/lib/exchange-rate.ts`
-- Pattern: One entry per day; fetched from dolarapi.com on-demand
-- Trazability: Every CashMovement stamped with exchangeRateId for reproducible conversion
+**Permission Abstraction:**
+- Purpose: Role-based access control at the action level
+- Pattern: `requirePermission(permission: Permission)` function
+- How it works:
+  1. Extracts user role from JWT session
+  2. Calls `checkPermissionDb(role, permission)` to query database
+  3. Falls back to hardcoded defaults if no DB records
+  4. Throws error if permission denied
+- Permission types: "dashboard:view", "sales:view", "sales:manage", "cash:view", "cash:manage", etc.
+- Roles map to permissions via `DEFAULT_ROLE_PERMISSIONS` in `rbac.ts`:
+  - SUPER_ADMIN: `["*"]` (all permissions)
+  - ADMINISTRACION: Most view + manage except cash
+  - FINANZAS: Cash + sales view + persons
+  - COBRANZA: Sales + persons + cash view (no manage)
 
-**User with embedded Seller:**
-- Purpose: Unified user model with optional seller capabilities
-- Examples: `src/server/models/user.model.ts`
-- Pattern: isSeller boolean + commissionRate on User; not separate table
-- RBAC: Role enum (SUPER_ADMIN, ADMINISTRACION, FINANZAS, COBRANZA) + permission checks via DB
+**Email Template Abstraction:**
+- Purpose: Reusable HTML email generators
+- Location: `src/lib/email-templates.ts`
+- Examples: `upcomingChargeEmailHtml()`, `overdueInstallmentEmailHtml()`, `upcomingSigningEmailHtml()`
+- Pattern: Functions return HTML strings with interpolated values
+- Used by: Cron route, potentially future notification actions
 
-**SigningSlot (appointment scheduling):**
-- Purpose: Manage notary appointment scheduling for deed closings
-- Examples: `src/server/models/signing.model.ts`, `src/server/actions/signing.actions.ts`
-- Pattern: Calendar-based with user assignments (createdById, sellerId)
+**Installment Calculation:**
+- Purpose: Core business logic for payment plans
+- Functions:
+  - `generateInstallments()`: Creates installment schedule from sale parameters
+    - Takes: saleId, totalInstallments, regularInstallmentAmount, firstInstallmentAmount, firstInstallmentMonth, collectionDay, currency
+    - Returns: Array of InstallmentData with dueDate, amount, monthLabel
+    - Logic: Handles variable collection days, respects month boundaries (31st → 28th in Feb)
+  - `recalculateInstallments()`: Adjusts remaining installments after refuerzo payment
+    - Takes: existing sale with installments, paid refuerzo amount
+    - Returns: Recalculated amounts, stores original amounts in `originalAmount` field
 
 ## Entry Points
 
 **Web Application:**
-- Location: `src/app/(dashboard)/dashboard/page.tsx`
-- Triggers: User navigates to /dashboard after login
-- Responsibilities:
-  - Query KPIs (active sales count, overdue count, monthly income, available lots, etc.)
-  - Render 6 summary cards with real-time counts
-  - Display recent sales, overdue installments, upcoming signings
+- Location: `src/app/layout.tsx` (RootLayout)
+- Triggers: Browser request to any `/` path
+- Responsibilities: Global HTML structure, language set to Spanish, CSS imports
+
+**Dashboard:**
+- Location: `src/app/(dashboard)/layout.tsx`
+- Triggers: Browser request to `/dashboard/*` routes (protected by middleware)
+- Responsibilities: Auth check via `requireAuth()`, render Sidebar + MobileSidebar + content area
 
 **Authentication:**
-- Location: `src/app/api/auth/[...nextauth]/route.ts`
-- Triggers: User submits login form or accesses protected route
-- Responsibilities:
-  - Route to Next-Auth handlers
-  - Delegate to Credentials provider in `src/lib/auth.ts`
-  - Validate email + password, return session
+- Location: `src/app/(auth)/login/page.tsx` and `src/app/api/auth/[...nextauth]/route.ts`
+- Triggers: Unauthenticated request, or POST to sign-in endpoint
+- Responsibilities: Credentials provider validation, JWT token creation, session management
 
-**Cron Jobs:**
-- Location: `src/app/api/cron/notify-upcoming/` (structure exists)
-- Triggers: External scheduler (e.g., Vercel Cron, GitHub Actions)
-- Responsibilities: Fetch upcoming signings, send notifications to users
+**Health Check:**
+- Location: `src/app/api/health/route.ts`
+- Triggers: GET request from monitoring systems
+- Responsibilities: Return 200 OK or health status
 
-**API Health Check:**
-- Location: `src/app/api/health/`
-- Triggers: Monitoring/deployment verification
-- Responsibilities: Return database connectivity status
+**Cron Handler:**
+- Location: `src/app/api/cron/notify-upcoming/route.ts`
+- Triggers: External cron service call with CRON_SECRET
+- Responsibilities: Query upcoming charges/signings, create notifications, send emails
 
 ## Error Handling
 
-**Strategy:** Try-catch with user-friendly error messages + audit logging
+**Strategy:** Layered error propagation with user-friendly messages
 
 **Patterns:**
 
-**Server Actions:**
-```typescript
-// Pattern from payment.actions.ts
-export async function payInstallment(_prevState: ActionResult, formData: FormData): Promise<ActionResult> {
-  const session = await requirePermission("cash:manage");
+1. **Validation Errors (Client-Facing):**
+   - Caught in server actions via `safeParse()`
+   - Returned as `{ success: false, error: "field was invalid" }`
+   - Displayed in toast notifications to user
 
-  // Parse + validate inputs
-  if (!installmentId) return { success: false, error: "ID de cuota requerido" };
+2. **Permission Errors (Security):**
+   - Thrown from `requirePermission()` as Error
+   - Caught by Next.js error boundary
+   - Results in 403-like response or error page
 
-  // Fetch context
-  const installment = await prisma.installment.findUnique(...);
-  if (!installment) return { success: false, error: "Cuota no encontrada" };
+3. **Database Errors (Operations):**
+   - Prisma.PrismaClientKnownRequestError caught (e.g., P2002 duplicate key)
+   - Converted to user-friendly message in server action catch block
+   - Example: `"Ya existe un usuario con ese email"` for duplicate email
 
-  // Business logic with try-catch for DB errors
-  try {
-    const result = await prisma.$transaction([...]);
-    return { success: true, data: result };
-  } catch (error) {
-    return { success: false, error: "Error procesando pago" };
-  }
-}
-```
+4. **Async/Await Errors:**
+   - Unhandled errors in server actions propagate to global error.tsx
+   - Email failures in cron jobs are caught individually; one email error doesn't fail the whole cron job
 
-**Permission Denial:**
-```typescript
-// Pattern from auth-guard.ts
-export async function requirePermission(permission: Permission) {
-  const session = await requireAuth();
-  const allowed = await checkPermissionDb(session.user.role as Role, permission);
-  if (!allowed) throw new Error(`Permiso denegado: se requiere ${permission}`);
-  return session;
-}
-```
-
-**Validation:**
-```typescript
-// Zod schemas in src/schemas/*.schema.ts
-const saleCreateSchema = z.object({
-  personId: z.string(),
-  lotId: z.string(),
-  totalPrice: z.number().min(0),
-  // ...
-});
-
-// In action
-const parsed = saleCreateSchema.safeParse(data);
-if (!parsed.success) return { success: false, error: parsed.error.message };
-```
+5. **API Route Errors:**
+   - Bearer token validation failures return 401 Unauthorized
+   - Database/processing errors logged to console, return 200 with error counts in response body
 
 ## Cross-Cutting Concerns
 
 **Logging:**
-- Approach: `console.log()` in development; audit_log table for critical mutations
-- AuditLog model tracks createdById, operationType, entityId, timestamp
+- Audit log for sensitive operations via `logAction()` in every write action
+- Stored in AuditLog table with: entityType, entityId, action, previousData, newData, userId, timestamp
+- Console.error for cron errors, service failures
 
 **Validation:**
-- Approach: Zod schemas at action boundary (input validation)
-- All form data parsed through schema before business logic execution
-- Database constraints as secondary safeguard (NOT NULL, UNIQUE, FOREIGN KEY)
+- Zod schemas applied in server actions before database operations
+- Type-safe via TypeScript + Prisma generated types
+- Enum validation for domain values (SaleStatus, LotStatus, Role, etc.)
 
 **Authentication:**
-- Approach: Next-Auth v5 with Credentials provider
-- Session checked at every server action via `requireAuth()`
-- Protected routes via `(auth)` and `(dashboard)` route groups
+- Auth.js v5 with Credentials provider
+- Session stored as JWT in httpOnly cookie
+- Middleware (`src/middleware.ts`) applies to all routes except `/api/auth`, `/api/health`, `/api/cron`, static assets
+- `requireAuth()` and `requirePermission()` guards on server components and actions
 
-**Authorization (RBAC):**
-- Approach: Permission-based via `checkPermissionDb(role, permission)`
-- Permissions dynamically loaded from RolePermission table
-- DEFAULT_ROLE_PERMISSIONS hardcoded as seed fallback
-- Example: COBRANZA role has [dashboard:view, persons:view, sales:view, cash:manage]
+**Authorization:**
+- Role-based permissions checked via `checkPermissionDb(role, permission)`
+- Fallback to hardcoded defaults if database has no records
+- Permission matrix in RBAC.ts shows who can do what
 
-**Notification:**
-- Approach: In-memory Message model + Notification records
-- Pattern: createMessage() → parseNotificationTrigger() → emit Toast (client)
-- Future: Integration with Nodemailer for email (configured but not wired)
+**Caching:**
+- Next.js built-in caching: `revalidatePath()` after mutations to invalidate stale data
+- Static generation not used (all routes are dynamic)
+- Prisma client connection pooling via PrismaPg adapter
 
-**Audit Trail:**
-- Approach: createdById field on all critical entities (Sale, ExtraCharge, Person, SigningSlot, CashMovement)
-- Every mutation stamped with session.user.id
-- AuditLog table (empty in MVP) reserved for detailed operation tracking
+**Currency Handling:**
+- Dual currency support (USD/ARS) via Currency enum
+- ExchangeRate fetched daily from dolarapi.com API
+- Stored in database with officialBuy, officialSell, blueBuy, blueSell rates
+- Formatted for display via `formatCurrency()` utility
 
 ---
 
-*Architecture analysis: 2026-02-25*
+*Architecture analysis: 2026-02-26*

@@ -1,197 +1,253 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-02-25
+**Analysis Date:** 2026-02-26
 
 ## Tech Debt
 
-**Exchange Rate Dependency:**
-- Issue: System depends on external API (dolarapi.com) for daily exchange rates. If API is down, payments cannot be processed accurately.
-- Files: `src/lib/exchange-rate.ts`, `src/server/actions/exchange-rate.actions.ts`
-- Impact: Payment recording requires a valid exchange rate. No fallback mechanism if API fails.
-- Fix approach: Implement automatic retry logic with exponential backoff. Cache rates locally. Allow manual rate entry without requiring API.
+**Large Form Component:**
+- Issue: `src/app/(dashboard)/ventas/_components/sale-form.tsx` (782 lines) and `src/app/(dashboard)/estadisticas/page.tsx` (773 lines) combine logic, state management, and rendering in single files
+- Files: `src/app/(dashboard)/ventas/_components/sale-form.tsx`, `src/app/(dashboard)/estadisticas/page.tsx`
+- Impact: Difficult to test, refactor, or reuse form logic; increases maintenance burden
+- Fix approach: Extract validation, calculation logic into separate utility functions; break form into smaller sub-components for field groups
 
-**Decimal Serialization Pattern:**
-- Issue: Prisma Decimal fields must be manually serialized to numbers in server actions before sending to client. This is repeated across multiple files with boilerplate code.
-- Files: `src/server/actions/exchange-rate.actions.ts`, `src/server/actions/payment-receipt.actions.ts`, `src/server/actions/sale.actions.ts`
-- Impact: Easy to forget serialization, causing serialization errors on client. No type safety across serialization boundary.
-- Fix approach: Create a generic serialization utility that handles all Decimal fields automatically based on Prisma schema introspection.
+**Console Logging in Production Code:**
+- Issue: Multiple `console.log()` and `console.error()` statements throughout action handlers and API routes
+- Files: `src/server/actions/audit-log.actions.ts`, `src/server/actions/cash-movement.actions.ts`, `src/lib/email.ts`, `src/app/api/cron/notify-upcoming/route.ts` (multiple locations)
+- Impact: Logs expose system state in production; difficult to disable by environment
+- Fix approach: Replace with structured logging library (e.g., Winston, Pino) that respects `NODE_ENV`; remove debug logs from error paths
 
-**Nested Transaction Handling in Payment Logic:**
-- Issue: In `src/server/actions/payment.actions.ts`, the `payExtraCharge()` function calls `recalculateInstallments()` outside the transaction (line 293-294). If recalculation fails, the payment has already been recorded and committed.
-- Files: `src/server/actions/payment.actions.ts` (lines 244-313), `src/lib/installment-recalculator.ts` (lines 14-53)
-- Impact: Orphaned payment records if recalculation fails. Data inconsistency between paid charges and installment amounts.
-- Fix approach: Move recalculation logic into the transaction, or wrap the entire flow in a distributed transaction pattern.
+**Missing Test Suite:**
+- Issue: No unit or integration tests in codebase; only TESTING.md smoke test checklist
+- Files: `TESTING.md` (manual checklist only), no `*.test.ts` or `*.spec.ts` files
+- Impact: Cannot verify refactoring, catch regressions, or confidently deploy changes
+- Fix approach: Add Jest/Vitest config, start with critical paths: `lib/installment-generator.ts`, `lib/installment-recalculator.ts`, `server/actions/payment.actions.ts`
+
+**Duplicate Validation Logic:**
+- Issue: Installment amount validation logic appears in multiple places: `sale-form.tsx` (preview calculation), `sale.actions.ts` (server validation), `installment-generator.ts` (generation)
+- Files: `src/app/(dashboard)/ventas/_components/sale-form.tsx`, `src/server/actions/sale.actions.ts`, `src/lib/installment-generator.ts`
+- Impact: Risk of inconsistency; changes to logic need updates in 3+ places
+- Fix approach: Consolidate into single `calculateInstallmentPlan()` utility function used by all three
 
 ## Known Bugs
 
-**Overpayment Detection on Mixed-Currency Transactions:**
-- Symptoms: If an installment has `paidAmount=0` and `paidInCurrency=NULL`, paying it in a different currency than the original sale currency may allow overpayment due to rounding or rate differences.
-- Files: `src/server/actions/payment.actions.ts` (lines 84-91)
-- Trigger: Pay an installment in ARS when sale is in USD, with an unfavorable exchange rate that makes the equivalent exceed the installment amount.
-- Workaround: Pre-calculate equivalent amount in UI before submission. System validates amount per line 85-89 but doesn't account for currency conversion.
+**Decimal Serialization Gap:**
+- Symptoms: Prisma Decimal type returns JavaScript `Decimal` objects that don't serialize to JSON; workaround is manual Number() conversion
+- Files: `src/server/actions/sale.actions.ts` (lines 40-63), `src/server/actions/payment.actions.ts` (manual conversions throughout)
+- Trigger: Any action that fetches Decimals from Prisma and returns via Server Action
+- Workaround: Every query manually converts: `Number(sale.totalPrice)`. Risk: Inconsistent application across actions
 
-**Multi-Lot Sales (groupId) Not Validated:**
-- Symptoms: A sale can reference a `groupId` but there is no constraint ensuring all sales in a group have the same payment plan (installments, due dates, amounts).
-- Files: `prisma/schema.prisma` (line 328), `src/server/actions/sale.actions.ts`, `src/server/actions/import.actions.ts`
-- Trigger: Create two sales with same groupId but different `firstInstallmentMonth` or `collectionDay`.
-- Workaround: None. Frontend must enforce validation; DB has no integrity checks.
+**Missing CreatedBy in SigningSlot Creation:**
+- Symptoms: SigningSlot model includes `createdById` field but schema allows it to be nullable; API may not be setting it
+- Files: `src/prisma/schema.prisma` (line 592: `createdById String?`), `src/server/actions/` (check signing creation)
+- Trigger: Create signing slot via API/UI without explicit createdById assignment
+- Workaround: Frontend must pass userId explicitly; no server-side default
 
-**Installment Status Computation (VENCIDA):**
-- Symptoms: Overdue status is computed client-side in `getSaleById()` by comparing `dueDate < today`. If user's system clock is wrong or API is called at different times, status can fluctuate.
-- Files: `src/server/actions/sale.actions.ts` (lines 26-34)
-- Trigger: Access the same sale at 23:59 and 00:01 across day boundary.
-- Workaround: Rely on consistent system time. No server-side status caching.
+**Exchange Rate Race Condition:**
+- Symptoms: If multiple cash movements are recorded on same day before ExchangeRate record is created, movements may have null exchangeRateId
+- Files: `src/server/models/exchange-rate.model.ts`, `src/server/actions/payment.actions.ts` (line 99-115 fetches rate without create-if-missing fallback)
+- Trigger: Large volume of payments on day before exchange rate cron runs
+- Workaround: Manual ExchangeRate entry via admin panel; cron ensures daily consistency
 
 ## Security Considerations
 
-**No Rate-Limiting on Authentication:**
-- Risk: The login endpoint (`src/app/api/auth/[...nextauth]/route.ts`) has no rate-limiting. Brute-force attacks on user accounts are possible.
-- Files: `src/lib/auth.ts`, `src/lib/auth.config.ts`
-- Current mitigation: None. Auth.js provides session management but not DDoS/brute-force protection.
-- Recommendations: Implement rate-limiting middleware (e.g., via upstash/redis or a middleware library). Add account lockout after N failed attempts.
+**CRON_SECRET Hardcoded in Comparison:**
+- Risk: `process.env.CRON_SECRET` compared as plain string in `src/app/api/cron/notify-upcoming/route.ts` line 49; timing attack possible with bearer token
+- Files: `src/app/api/cron/notify-upcoming/route.ts` (line 49)
+- Current mitigation: Environment variable not exposed in code; short token acceptable for internal cron
+- Recommendations: Use `crypto.timingSafeEqual()` for token comparison; document CRON_SECRET requirement in deployment guide
 
-**Email Sending Has No Retry or Verification:**
-- Risk: `sendEmail()` in `src/lib/email.ts` has no delivery confirmation. Failed emails are logged but not retried, causing silent delivery failures.
-- Files: `src/lib/email.ts`, `src/server/actions/payment-receipt.actions.ts`, `src/app/api/cron/notify-upcoming/route.ts`
-- Current mitigation: Catch and log errors, but no alerting to admin if email fails.
-- Recommendations: Implement a queue-based email system (e.g., Bull, Resend with retry). Track email delivery status in the DB.
+**No Rate Limiting on Public APIs:**
+- Risk: `/api/health` and cron endpoint accessible without rate limiting; DoS potential
+- Files: `src/app/api/health/route.ts`, `src/app/api/cron/notify-upcoming/route.ts`
+- Current mitigation: Health endpoint read-only; cron endpoint has bearer token check
+- Recommendations: Add rate limiting middleware (e.g., `Ratelimit` from Upstash) to `/api/*` routes; document expected request frequency
 
-**Audit Logs Not Immutable:**
-- Risk: AuditLog records can be deleted by SUPER_ADMIN. No append-only constraint or signature verification.
-- Files: `prisma/schema.prisma` (lines 677-693), `src/server/models/audit-log.model.ts`
-- Current mitigation: None. Audit logs are a regular table.
-- Recommendations: Implement an append-only audit log table with no DELETE permissions. Consider cryptographic signatures.
+**No CSRF Protection on POST Actions:**
+- Risk: Server Actions via form submission do not include CSRF token validation
+- Files: All `src/app/(dashboard)/**/*-form.tsx` components
+- Current mitigation: Next.js Server Action origin validation handles some cases; Auth.js session implicit CSRF
+- Recommendations: Verify Next.js 15 CSRF protection is enabled; test cross-origin form submissions
 
-**Cron Endpoint Secured Only by Secret Header:**
-- Risk: The `/api/cron/notify-upcoming` endpoint only validates a Bearer token in the Authorization header. If the token is exposed, anyone can trigger notifications.
-- Files: `src/app/api/cron/notify-upcoming/route.ts` (line 48)
-- Current mitigation: Expects `process.env.CRON_SECRET` to be set. No HTTPS enforcement visible.
-- Recommendations: Use IP whitelisting if cron is run from a fixed IP. Consider HMAC signing of requests. Add request timestamp validation.
+**Email Configuration from SystemConfig:**
+- Risk: SMTP credentials stored in SystemConfig table as plain text (not encrypted at rest)
+- Files: `src/lib/email.ts` (lines 32-41 read from DB), `src/app/(dashboard)/configuracion/_components/system-config-section.tsx`
+- Current mitigation: Credentials can also come from environment variables (fallback)
+- Recommendations: Encrypt SMTP_PASS field in database; use environment variables for production instead
+
+**No Permission Check on Email Sending:**
+- Risk: `sendEmail()` utility is public; any Server Action can send emails without audit
+- Files: `src/lib/email.ts` (no permission check), called from cron, payment receipt, import routes
+- Current mitigation: Email only sent from internal routes; no user-facing email endpoint
+- Recommendations: Add logger call to email sending to track who triggered sends; implement allowlist of email types per role
 
 ## Performance Bottlenecks
 
-**No Pagination on Cash Movements List:**
-- Problem: `src/server/models/cash-movement.model.ts` likely loads all movements without pagination. With thousands of transactions, this will cause memory and query performance issues.
-- Files: `src/server/models/cash-movement.model.ts`
-- Cause: Schema design allows unbounded queries without explicit LIMIT.
-- Improvement path: Implement cursor-based pagination. Add default LIMIT of 100. Pre-calculate summary statistics (totals by type/month) in `CashBalance` snapshots.
+**N+1 Query on Person.findById:**
+- Problem: `findById` fetches all sales with nested installments/extraCharges without pagination; `take: 50` on cashMovements only
+- Files: `src/server/models/person.model.ts` (lines 33-57)
+- Cause: Full join on sales with all installments for a person with 100+ sales causes large data transfer
+- Improvement path: Add `take/skip` pagination to `sales` relation; paginate cash movements separately; lazy-load sections in UI
 
-**Exchange Rate Fetch on Every Payment:**
-- Problem: `getTodayExchangeRate()` queries the database on every payment, then makes an API call if not found. In high-volume payment recording, this becomes a bottleneck.
-- Files: `src/server/actions/exchange-rate.actions.ts` (lines 27-50)
-- Cause: No caching strategy. Each payment needs a rate.
-- Improvement path: Cache exchange rates in memory or Redis for 1 hour. Batch rate lookups. Pre-fetch rates at midnight.
+**Statistics Page Full-Year Query:**
+- Problem: `src/app/(dashboard)/estadisticas/page.tsx` (773 lines) fetches all CashMovements for a year without pagination
+- Files: `src/app/(dashboard)/estadisticas/page.tsx` (line 100+)
+- Cause: Queries all movements for 12-month calculation; no index on (date, type) combo for filtering
+- Improvement path: Add `CashMovement` index `@@index([date, type])` in Prisma; paginate or use aggregation queries
 
-**Installation Recalculation Not Indexed:**
-- Problem: `recalculateInstallments()` queries all unpaid installments for a sale without indexed filtering. With many installments, this becomes slow.
-- Files: `src/lib/installment-recalculator.ts` (line 19)
-- Cause: Query relies on (saleId, status) filtering; indexes exist but not optimized for this pattern.
-- Improvement path: Add composite index on (saleId, status). Consider caching installment totals.
+**Cron Query Without Pagination:**
+- Problem: `cronModel.findUpcomingExtraCharges()` and `findUpcomingInstallments()` do not limit result set
+- Files: `src/server/models/cron.model.ts` (lines 8-38, 59-88)
+- Cause: If thousands of overdue items exist, cron processes all in single batch; memory + timeout risk
+- Improvement path: Add `take: 100` with offset-based pagination; break into multiple cron jobs or chunk processing
+
+**Installment Recalculation in Transaction:**
+- Problem: `recalculateInstallments()` updates all unpaid installments in transaction without batching
+- Files: `src/lib/installment-recalculator.ts` (lines 36-52)
+- Cause: Sale with 360 unpaid installments = 360 individual update operations in transaction
+- Improvement path: Use raw SQL `UPDATE ... WHERE` instead; or batch by 50 updates per transaction
+
+**Audit Log Not Indexed by User:**
+- Problem: `AuditLog` has index on `[entity, entityId]` and `[userId]` separately but not useful for "recent actions by user" query
+- Files: `src/prisma/schema.prisma` (lines 690-692)
+- Cause: Queries like "show all CREATEs by userId" must scan entire table
+- Improvement path: Add composite index `@@index([userId, createdAt])` to Prisma schema
 
 ## Fragile Areas
 
-**Import Batch Processing:**
-- Files: `src/server/actions/import.actions.ts`
-- Why fragile: Each row is processed independently without rollback. If row 100 fails after rows 1-99 succeed, the batch is partially imported with no undo.
-- Safe modification: Wrap entire batch in a transaction with rollback. Return early on first critical error. Add a "dry run" mode to preview before commit.
-- Test coverage: No test file for import. Edge cases like duplicate DNI/CUIT, missing developments, invalid installment months are only caught at runtime.
+**Multi-Lot Sales (groupId):**
+- Files: `src/prisma/schema.prisma` (line 328), `src/server/actions/sale.actions.ts` (not fully tested in smoke tests)
+- Why fragile: `groupId` field in Sale allows linking multiple lot sales to one payment plan, but no UI for managing groups; creation only via import
+- Safe modification: Add test case for groupId scenarios before refactoring; ensure installment generation works with grouped sales
+- Test coverage: No explicit tests for grouped sale installment splitting; smoke test coverage: None
 
-**Installment Generator Date Logic:**
-- Files: `src/lib/installment-generator.ts` (lines 49-68)
-- Why fragile: Uses `new Date(baseYear, targetMonth, day)` which can cause off-by-one errors with month overflow. If collectionDay=31 and target month has only 30 days, the behavior is browser-dependent.
-- Safe modification: Use a date library (date-fns, Day.js) for month-end handling. Test with edge cases: Feb 28/29, months with 30 days.
-- Test coverage: No test file visible. Missing tests for: leap years, Feb 29 collection day, year boundaries.
+**Extra Charge Recalculation:**
+- Files: `src/lib/installment-recalculator.ts`, `src/server/actions/payment.actions.ts` (lines 230-270 call it)
+- Why fragile: `originalAmount` preservation logic assumes first recalculation; second refuerzo payment may corrupt data if logic not tested
+- Safe modification: Write integration test for: pay ExtraCharge → verify installments recalculated → pay second ExtraCharge → verify data consistency
+- Test coverage: No unit tests; smoke test coverage: Partial (6b only)
 
-**Payment Status Transition Logic:**
-- Files: `src/server/actions/payment.actions.ts` (lines 140-159), `src/server/actions/extra-charge.actions.ts`
-- Why fragile: Status transitions (PENDIENTE → PAGADA, or → PARCIAL) are determined by simple amount comparison. No validation of status history or preventing backwards transitions.
-- Safe modification: Add explicit status transition rules. Prevent PAGADA → PENDIENTE. Log all transitions.
-- Test coverage: No visible test for edge case: paying 0.01 USD on a 1000 USD installment should set status to PARCIAL, not PAGADA. Rounding errors could cause this.
+**Lot Status Transitions:**
+- Files: `src/prisma/schema.prisma` (lines 207-215: 7 statuses), `src/server/actions/sale.actions.ts` (lines 67-79: mapSaleStatusToLotStatus)
+- Why fragile: Lot status determined by Sale.status but no validation prevents invalid transitions (e.g., VENDIDO → DISPONIBLE); cascade deletes Sale but not inverse
+- Safe modification: Add `enum LotStatusTransition` with allowed state changes; add guard in sale cancel action
+- Test coverage: No explicit state machine tests
+
+**Exchange Rate Lookup:**
+- Files: `src/server/actions/payment.actions.ts` (lines 99-115: `getExchangeRateForCurrency`)
+- Why fragile: If exchange-rate.actions.ts `getOrCreateLatestRate()` fails, payment creation may fail silently with no fallback
+- Safe modification: Add fallback to last-known rate or manual_rate override; document behavior
+- Test coverage: No error case tests
+
+**Cron Notification Duplicate Prevention:**
+- Files: `src/server/models/cron.model.ts` (lines 94-102: hasOverdueNotification uses findFirst), `src/app/api/cron/notify-upcoming/route.ts` (lines 73-85)
+- Why fragile: Duplicate prevention relies on database query order; if cron runs concurrently, both may create notification before either marks notified=true
+- Safe modification: Use database-level constraint or row-level lock; add unique index `@@index([referenceType, referenceId, type])` to Notification
+- Test coverage: No concurrency tests
 
 ## Scaling Limits
 
-**Single PostgreSQL Instance:**
-- Current capacity: Design assumes single DB with no replication. Concurrent writes to CashMovement during peak collection hours (month-end) will see lock contention.
-- Limit: System supports ~100 users. At 10 transactions/min during peak, expect slowdowns.
-- Scaling path: Implement read replicas for reporting. Use connection pooling (PgBouncer). Partition CashMovement by month.
+**Database: Installment Growth:**
+- Current capacity: Schema supports unlimited installments per sale; no archival strategy
+- Limit: Real estate business with 1000 sales × 360 installments each = 360K records; queries on this table will slow
+- Scaling path: Implement installment archival after sale completes; add `archivedAt` field; query only active sales' installments
 
-**Notification Broadcasting Without Queue:**
-- Current capacity: Cron job iterates all notifications and sends emails synchronously. With 1000+ notifications, this times out.
-- Limit: Breaks around 500 simultaneous notifications.
-- Scaling path: Move email sending to a queue (Bull, RabbitMQ). Make notifications async.
+**Cron Email Sending:**
+- Current capacity: Single-threaded cron endpoint sends one email per notification; 1000 notifications = 1000 sequential sendEmail() calls
+- Limit: If SMTP slow or email list grows, cron may timeout (serverless timeout ~30s)
+- Scaling path: Move to background queue (Bull, BullMQ, Inngest); return job IDs from cron endpoint
 
-**No Rate Aggregation:**
-- Current capacity: Each payment query refreshes exchange rates from API. At 50 payments/minute, this causes N+1 API calls.
-- Limit: API rate limits (dolarapi.com) are not enforced.
-- Scaling path: Cache rates per minute in Redis. Implement application-level rate limiting.
+**Cash Movement Table:**
+- Current capacity: 14 movement types, no partitioning or archival
+- Limit: Statistics page queries all movements for a year; with 10 years data = millions of rows = slow aggregation
+- Scaling path: Add `createdAt` index; implement materialized view for monthly balances; partition by year
+
+**User Permissions Cache:**
+- Current capacity: `checkPermissionDb()` in `src/lib/rbac.ts` queries RolePermission table on every protected action
+- Limit: No caching; with 100+ concurrent users = 100+ DB queries per action
+- Scaling path: Add in-memory cache (Redis or Node `lru-cache`) with 5-minute TTL; invalidate on permission change
+
+**Notification System:**
+- Current capacity: Each notification is individual database record
+- Limit: 100+ active users = 100 notifications per cron run = unbounded growth in Notification table
+- Scaling path: Add `grouping` field to consolidate similar notifications; implement read-only archive table
 
 ## Dependencies at Risk
 
-**dolarapi.com Availability:**
-- Risk: External API with no SLA. If down, payment recording stalls.
-- Impact: Entire cash module breaks. Users cannot process payments.
-- Migration plan: Add fallback to bluelytics.com.ar API. Store last-known-good rates locally. Allow manual override for critical payments.
+**next-auth v5 Beta:**
+- Risk: Using `5.0.0-beta.30` in production; breaking changes possible before stable release
+- Impact: Login flow, session handling, custom providers all at risk
+- Migration plan: Pin version in package.json; set up notifications for beta updates; test after each minor version; plan migration to stable v5.0.0 before GA cutoff
 
-**Auth.js v5:**
-- Risk: Auth.js is in active development. Callback signature may change between versions.
-- Impact: Authentication breaks on upgrade.
-- Migration plan: Pin to exact version in package.json. Run integration tests before upgrading.
+**Nodemailer for Email:**
+- Risk: No built-in retry logic or delivery confirmation; SMTP errors fail silently if not caught
+- Impact: Users don't receive payment receipts or alerts; no observability
+- Migration plan: Switch to AWS SES, SendGrid, or Postmark (with retry logic) for production; keep Nodemailer for dev
 
-**Prisma Schema Evolution:**
-- Risk: Schema is at v0.7 but has no migration validation tests. Changing field types or constraints could break deployed instances.
-- Impact: Rollback path unclear. No migration testing in CI.
-- Migration plan: Add Prisma migration tests. Use `prisma migrate status` in CI. Require manual approval for breaking changes.
+**Excel Import (papaparse + xlsx):**
+- Risk: `papaparse@5.5.3` and `xlsx@0.18.5` are third-party parsers with security surface; no regular updates in lock file
+- Impact: Malformed files could crash import; no protection against billion-laughs attack in XML
+- Migration plan: Upgrade to latest versions; add file size limit (max 10MB); add timeout to parser
 
 ## Missing Critical Features
 
-**No Backup/Recovery Mechanism:**
-- Problem: No documentation on backup strategy. No disaster recovery procedure.
-- Blocks: Business continuity. Data loss scenarios unhandled.
+**Error Notification to Users:**
+- Problem: When payment fails, user isn't notified; only appears in system logs
+- Blocks: Users can't self-serve payment troubleshooting; must contact admin
+- Recommendation: Add `Notification` record when payment fails; send email to person with error + support contact
 
-**No Password Recovery Flow:**
-- Problem: Users cannot reset forgotten passwords. Only SUPER_ADMIN can reset via direct DB edit.
-- Blocks: User account recovery if email-based reset is needed.
+**Installment Payment Plan Modification:**
+- Problem: Once sale created, cannot modify installment dates/amounts without manual SQL
+- Blocks: Changes to payment schedules (e.g., add 3-month grace period) require DB intervention
+- Recommendation: Add UI to edit installment due dates and amounts before first payment
 
-**No Audit Trail for Data Corrections:**
-- Problem: AuditLog captures creation, but corrections to installment amounts (via refuerzo recalculation) are not logged separately.
-- Blocks: Compliance with financial record-keeping. No trail of who changed what amount and why.
+**Batch Payment Processing:**
+- Problem: Must pay installments one-at-a-time via UI; no bulk payment file import
+- Blocks: Large batches (bank transfers) require manual entry
+- Recommendation: Add batch payment import (bank statement reconciliation) in caja module
 
-**No Installment Partial Payment Tracking:**
-- Problem: When status is PARCIAL, there's no record of which payment dates contributed to paidAmount. Multiple partial payments are aggregated without history.
-- Blocks: Detailed payment history reports and reconciliation.
+**Two-Factor Authentication:**
+- Problem: Users authenticate with email + password only
+- Blocks: Account compromise risk; no MFA option
+- Recommendation: Add TOTP or email-based OTP via Auth.js extension
 
 ## Test Coverage Gaps
 
-**Payment Recalculation Logic:**
-- What's not tested: `recalculateInstallments()` edge cases: zero installments, negative amounts, rounding errors, concurrent recalculations.
-- Files: `src/lib/installment-recalculator.ts`
-- Risk: Silent calculation errors could lead to overstated or understated installment amounts. No alert if recalculation fails mid-transaction.
-- Priority: **High** — This directly affects financial calculations.
+**Installment Generator Edge Cases:**
+- What's not tested: Month boundary conditions (Feb in leap year, 31st of short months), year wraparound
+- Files: `src/lib/installment-generator.ts` (lines 50-81: collectionDay clamping logic)
+- Risk: Collection day clamping may produce off-by-one errors in edge months
+- Priority: High (financial calculation)
 
-**Exchange Rate Fallback:**
-- What's not tested: Behavior when dolarapi.com returns 500, 429, or times out. Current code returns null but downstream code may not handle it.
-- Files: `src/lib/exchange-rate.ts`, `src/server/actions/exchange-rate.actions.ts`
-- Risk: Payments recorded with NULL exchangeRateId cannot be reconciled later.
-- Priority: **High** — Production will hit this eventually.
+**Payment Decimal Precision:**
+- What's not tested: Rounding errors in payment splits; USD to ARS conversion precision
+- Files: `src/server/actions/payment.actions.ts` (currency conversion math), `src/lib/format.ts`
+- Risk: Penny rounding accumulates; USD $0.01 converted to ARS may lose precision
+- Priority: High (financial data integrity)
 
-**Multi-Lot Sales (groupId):**
-- What's not tested: Creating two sales with same groupId, different due dates. Paying one and checking if totals match.
-- Files: `src/server/actions/sale.actions.ts`, `src/server/actions/import.actions.ts`
-- Risk: Incomplete implementation. No validation that grouped sales have synchronized payment plans.
-- Priority: **Medium** — Feature is flagged in schema but not enforced.
+**Cascade Delete Behavior:**
+- What's not tested: Deleting development with 1000+ lots and associated sales/installments
+- Files: `src/prisma/schema.prisma` (cascade deletes on Lot, Installment, etc.), `src/server/actions/development.actions.ts`
+- Risk: Cascade may lock database or timeout; no transaction protection
+- Priority: Medium (operational safety)
 
-**Import Batch Rollback:**
-- What's not tested: Partial import failure. Creating 50 persons, 50 sales, then sales row 48 fails due to missing lot. Check that persons 1-47 and sales 1-47 are still in DB.
-- Files: `src/server/actions/import.actions.ts`
-- Risk: Corrupted data state if batch import partially succeeds.
-- Priority: **Medium** — Affects data integrity on high-volume imports.
+**Permission Matrix Consistency:**
+- What's not tested: Ensure every protected action checks correct permission; no orphaned permissions
+- Files: `src/lib/auth-guard.ts`, all `src/server/actions/*.ts` files
+- Risk: Permission checks may be bypassed; unused permissions confuse admins
+- Priority: Medium (security)
 
-**Cron Idempotency:**
-- What's not tested: Running notify-upcoming twice in same hour. Check that notifications are not duplicated.
-- Files: `src/app/api/cron/notify-upcoming/route.ts`
-- Risk: Users receive duplicate notifications.
-- Priority: **Low** — Uses `notified` flag but no explicit test for edge case of same charge notified in two different cron runs in same minute.
+**Concurrent Cron Runs:**
+- What's not tested: Two cron requests simultaneous on same item (duplicate email risk)
+- Files: `src/app/api/cron/notify-upcoming/route.ts` (no concurrency control)
+- Risk: notified flag may not prevent duplicates if two requests check simultaneously
+- Priority: Medium (data consistency)
+
+**Import Duplicate Handling:**
+- What's not tested: Re-import same CSV twice; edge case: DNI=null (no duplicate check)
+- Files: `src/server/actions/import.actions.ts` (lines 159-186: DNI uniqueness check)
+- Risk: Persons with null DNI can be imported multiple times
+- Priority: Low (import UX)
 
 ---
 
-*Concerns audit: 2026-02-25*
+*Concerns audit: 2026-02-26*
