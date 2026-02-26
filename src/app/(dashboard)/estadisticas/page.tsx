@@ -573,8 +573,9 @@ export default async function EstadisticasPage({ searchParams }: Props) {
               >
                 {collectionRate.toFixed(1)}%
               </p>
-              <p className="mt-1 text-sm font-medium text-muted-foreground">
+              <p className="mt-1 text-sm font-medium text-muted-foreground flex items-center justify-center gap-1">
                 Tasa de Cobranza
+                <CollectionHelpTooltip text="Porcentaje de cuotas cobradas sobre las vencidas a la fecha. Los pagos parciales se cuentan proporcionalmente (ej: pago de 50% = 0.5 cuotas cobradas)." />
               </p>
               <p className="text-xs text-muted-foreground">
                 {installmentsPaidToDate} cobradas de {installmentsDueToDate} vencidas a la fecha
@@ -605,30 +606,34 @@ export default async function EstadisticasPage({ searchParams }: Props) {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-md border bg-card p-3 shadow-sm">
                 <p className="text-2xl font-bold">{installmentsTotal}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
                   Cuotas programadas en {selectedYear}
+                  <CollectionHelpTooltip text="Total de cuotas generadas para todas las ventas activas durante este ano, independientemente de si ya vencieron o no." />
                 </p>
               </div>
               <div className="rounded-md border bg-card p-3 shadow-sm">
                 <p className="text-2xl font-bold">{installmentsDueToDate}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
                   Ya vencidas (hasta hoy)
+                  <CollectionHelpTooltip text="Cuotas cuya fecha de vencimiento ya paso. Incluye pagadas, parciales e impagas." />
                 </p>
               </div>
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-fluent dark:border-emerald-900 dark:bg-emerald-950">
                 <p className="text-2xl font-bold text-emerald-600">
                   {installmentsPaidToDate}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
                   Cobradas al dia
+                  <CollectionHelpTooltip text="Cuotas que fueron pagadas en su totalidad (estado PAGADA). No incluye pagos parciales en este conteo." />
                 </p>
               </div>
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-fluent dark:border-red-900 dark:bg-red-950">
                 <p className="text-2xl font-bold text-red-600">
                   {overdueCount}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
                   Impagas / vencidas
+                  <CollectionHelpTooltip text="Cuotas vencidas que no se pagaron o se pagaron parcialmente. Incluye estados PENDIENTE, VENCIDA y PARCIAL." />
                 </p>
               </div>
             </div>
@@ -636,24 +641,27 @@ export default async function EstadisticasPage({ searchParams }: Props) {
             {/* Detail metrics */}
             <div className="space-y-2 rounded-md border bg-card p-3 shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
                   Deuda vencida pendiente
+                  <CollectionHelpTooltip text="Suma del saldo adeudado de todas las cuotas vencidas impagas. Se calcula como monto total menos monto pagado de cada cuota." />
                 </span>
                 <span className="font-semibold text-red-600">
                   {formatCurrency(overdueAmount, "USD")}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
                   Cuotas futuras (aun no vencen)
+                  <CollectionHelpTooltip text="Cuotas cuya fecha de vencimiento es posterior a hoy. No se incluyen en la tasa de cobranza." />
                 </span>
                 <span className="font-semibold">
                   {installmentsPendingFuture}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
                   Dias promedio de cobro
+                  <CollectionHelpTooltip text="Promedio de dias entre la fecha de vencimiento y la fecha real de pago. Valores negativos indican pagos anticipados." />
                 </span>
                 <span className="font-semibold">
                   {avgDaysToPayment > 0
