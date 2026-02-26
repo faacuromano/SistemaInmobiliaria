@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Clock, AlertTriangle } from "lucide-react";
-import { formatCurrency } from "@/lib/format";
+import { Price } from "@/components/shared/price";
 import type { Currency } from "@/types/enums";
 
 type InstallmentLike = {
@@ -127,12 +127,12 @@ export function DebtSummary({ sales }: Props) {
               )}
               {card.usd > 0 && (
                 <p className="text-sm font-semibold">
-                  {formatCurrency(card.usd, "USD")}
+                  <Price amount={card.usd} currency="USD" />
                 </p>
               )}
               {card.ars > 0 && (
                 <p className="text-sm font-semibold">
-                  {formatCurrency(card.ars, "ARS")}
+                  <Price amount={card.ars} currency="ARS" />
                 </p>
               )}
               {card.usd === 0 && card.ars === 0 && !("count" in card) && (

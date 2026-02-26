@@ -2,7 +2,8 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { Price } from "@/components/shared/price";
 import {
   INSTALLMENT_STATUS_LABELS,
   INSTALLMENT_STATUS_COLORS,
@@ -148,10 +149,10 @@ export function PendingInstallments({ sales }: Props) {
                         {item.developmentName}
                       </td>
                       <td className="p-3 text-sm text-right">
-                        <p className="font-medium">{formatCurrency(remaining, item.currency)}</p>
+                        <p className="font-medium"><Price amount={remaining} currency={item.currency as "USD" | "ARS"} /></p>
                         {isPartial && (
                           <p className="text-xs text-muted-foreground">
-                            Pagado: {formatCurrency(item.paidAmount, item.currency)}
+                            Pagado: <Price amount={item.paidAmount} currency={item.currency as "USD" | "ARS"} />
                           </p>
                         )}
                       </td>

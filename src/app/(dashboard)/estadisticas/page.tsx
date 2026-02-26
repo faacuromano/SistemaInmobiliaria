@@ -139,6 +139,7 @@ export default async function EstadisticasPage({ searchParams }: Props) {
     partialInstallmentsDue,
     prevPartialInstallments,
     developments,
+    totalPaidInYear,
   ] = await Promise.all([
     // Current year cash movements
     prisma.cashMovement.findMany({
@@ -302,6 +303,17 @@ export default async function EstadisticasPage({ searchParams }: Props) {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+
+    // All PAGADA installments in the year (regardless of dueDate vs today)
+    prisma.installment.count({
+      where: {
+        dueDate: { gte: startOfYear, lte: endOfYear },
+        status: "PAGADA",
+        ...(developmentId
+          ? { sale: { lot: { developmentId } } }
+          : {}),
+      },
+    }),
   ]);
 
   // Also get paid installments with paidDate for average days calculation
@@ -415,6 +427,7 @@ export default async function EstadisticasPage({ searchParams }: Props) {
     0
   );
   const installmentsPendingFuture = installmentsTotal - installmentsDueToDate;
+  const paidInAdvance = totalPaidInYear - installmentsPaidToDate;
 
   // Average days to payment
   let avgDaysToPayment = 0;
@@ -579,6 +592,7 @@ export default async function EstadisticasPage({ searchParams }: Props) {
               </p>
               <p className="text-xs text-muted-foreground">
                 {installmentsPaidToDate} cobradas de {installmentsDueToDate} vencidas a la fecha
+                {paidInAdvance > 0 && ` (+${paidInAdvance} anticipadas)`}
               </p>
             </div>
 
@@ -623,8 +637,8 @@ export default async function EstadisticasPage({ searchParams }: Props) {
                   {installmentsPaidToDate}
                 </p>
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  Cobradas al dia
-                  <CollectionHelpTooltip text="Cuotas que fueron pagadas en su totalidad (estado PAGADA). No incluye pagos parciales en este conteo." />
+                  Cobradas (de vencidas)
+                  <CollectionHelpTooltip text="Cuotas vencidas que fueron pagadas en su totalidad (estado PAGADA). No incluye pagos parciales ni pagos anticipados de cuotas futuras." />
                 </p>
               </div>
               <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-fluent dark:border-red-900 dark:bg-red-950">
@@ -636,10 +650,30 @@ export default async function EstadisticasPage({ searchParams }: Props) {
                   <CollectionHelpTooltip text="Cuotas vencidas que no se pagaron o se pagaron parcialmente. Incluye estados PENDIENTE, VENCIDA y PARCIAL." />
                 </p>
               </div>
+              {paidInAdvance > 0 && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-fluent dark:border-blue-900 dark:bg-blue-950 col-span-2">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {paidInAdvance}
+                  </p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    Pagadas por anticipado
+                    <CollectionHelpTooltip text="Cuotas cuya fecha de vencimiento es futura pero ya fueron pagadas. Indica pagos adelantados por parte del comprador." />
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Detail metrics */}
             <div className="space-y-2 rounded-md border bg-card p-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  Total pagadas en {selectedYear}
+                  <CollectionHelpTooltip text="Total de cuotas pagadas en el ano, incluyendo tanto las vencidas como las anticipadas." />
+                </span>
+                <span className="font-semibold text-emerald-600">
+                  {totalPaidInYear} de {installmentsTotal}
+                </span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   Deuda vencida pendiente

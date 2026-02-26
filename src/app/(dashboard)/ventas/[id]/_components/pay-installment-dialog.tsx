@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/form";
 import { CURRENCY_LABELS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/format";
+import { Price } from "@/components/shared/price";
 import { Currency } from "@/types/enums";
 import { payInstallment } from "@/server/actions/payment.actions";
 import type { ActionResult } from "@/types/actions";
@@ -132,170 +133,167 @@ export function PayInstallmentDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mb-4 rounded-md bg-muted p-3 text-sm">
-          <p>
-            Monto pendiente:{" "}
-            <span className="font-semibold">
-              {formatCurrency(
-                remaining,
-                installment.currency as "USD" | "ARS"
-              )}
-            </span>
-          </p>
-        </div>
+        <div className="px-5 pb-5">
+          <div className="mb-4 rounded-md bg-muted p-3 text-sm">
+            <p>
+              Monto pendiente:{" "}
+              <Price amount={remaining} currency={installment.currency as "USD" | "ARS"} className="font-semibold" />
+            </p>
+          </div>
 
-        <Form {...form}>
-          <form action={formAction} className="space-y-4">
-            <input
-              type="hidden"
-              name="installmentId"
-              value={installment.id}
-            />
-
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fecha de Pago</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => {
-                  const enteredAmount = parseFloat(field.value || "0") || 0;
-                  const isOver = enteredAmount > remaining;
-
-                  return (
-                    <FormItem>
-                      <FormLabel>Monto</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          placeholder="0.00"
-                          {...field}
-                        />
-                      </FormControl>
-                      {isOver && (
-                        <p className="text-xs font-medium text-destructive">
-                          El monto supera el saldo pendiente ({formatCurrency(remaining, currencyCode)})
-                        </p>
-                      )}
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+          <Form {...form}>
+            <form action={formAction} className="space-y-4">
+              <input
+                type="hidden"
+                name="installmentId"
+                value={installment.id}
               />
 
               <FormField
                 control={form.control}
-                name="currency"
+                name="date"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Moneda</FormLabel>
-                    <Select
-                      name="currency"
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {Object.entries(CURRENCY_LABELS).map(([key, label]) => (
-                          <SelectItem key={key} value={key}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Fecha de Pago</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* Partial payment warning */}
-            {(() => {
-              const enteredAmount = parseFloat(form.watch("amount") || "0") || 0;
-              if (enteredAmount > 0 && enteredAmount < remaining) {
-                const pendingAfter = remaining - enteredAmount;
-                return (
-                  <div className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                    <p className="font-medium">Pago parcial</p>
-                    <p className="text-xs mt-0.5">
-                      El monto a recibir ({formatCurrency(enteredAmount, currencyCode)}) es menor que el saldo de la cuota ({formatCurrency(remaining, currencyCode)}).
-                      Se marcara como <span className="font-semibold">Parcial</span> con un saldo restante de{" "}
-                      <span className="font-semibold">{formatCurrency(pendingAfter, currencyCode)}</span>, pendiente de cancelacion para completar el pago.
-                    </p>
-                  </div>
-                );
-              }
-              return null;
-            })()}
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="amount"
+                  render={({ field }) => {
+                    const enteredAmount = parseFloat(field.value || "0") || 0;
+                    const isOver = enteredAmount > remaining;
 
-            <FormField
-              control={form.control}
-              name="manualRate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cotizacion Manual (opcional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="Dejar vacio para usar cotizacion del dia"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    return (
+                      <FormItem>
+                        <FormLabel>Monto</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            placeholder="0.00"
+                            {...field}
+                          />
+                        </FormControl>
+                        {isOver && (
+                          <p className="text-xs font-medium text-destructive">
+                            El monto supera el saldo pendiente ({formatCurrency(remaining, currencyCode)})
+                          </p>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      rows={2}
-                      placeholder="Observaciones del pago..."
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Moneda</FormLabel>
+                      <Select
+                        name="currency"
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(CURRENCY_LABELS).map(([key, label]) => (
+                            <SelectItem key={key} value={key}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={isPending}>
-                {isPending ? "Procesando..." : "Registrar Pago"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+              {/* Partial payment warning */}
+              {(() => {
+                const enteredAmount = parseFloat(form.watch("amount") || "0") || 0;
+                if (enteredAmount > 0 && enteredAmount < remaining) {
+                  const pendingAfter = remaining - enteredAmount;
+                  return (
+                    <div className="rounded-sm border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                      <p className="font-medium">Pago parcial</p>
+                      <p className="text-xs mt-0.5">
+                        El monto a recibir ({formatCurrency(enteredAmount, currencyCode)}) es menor que el saldo de la cuota ({formatCurrency(remaining, currencyCode)}).
+                        Se marcara como <span className="font-semibold">Parcial</span> con un saldo restante de{" "}
+                        <span className="font-semibold">{formatCurrency(pendingAfter, currencyCode)}</span>, pendiente de cancelacion para completar el pago.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              <FormField
+                control={form.control}
+                name="manualRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cotizacion Manual (opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Dejar vacio para usar cotizacion del dia"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas (opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        rows={2}
+                        placeholder="Observaciones del pago..."
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isPending}>
+                  {isPending ? "Procesando..." : "Registrar Pago"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { formatCurrency } from "@/lib/format";
+import { Price } from "@/components/shared/price";
 import { MOVEMENT_TYPE_LABELS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -211,7 +211,7 @@ export function MonthlyMovementsTable({ monthlyData, movementsByType, selectedYe
                       </td>
                     )}
                     <td className="py-2 pr-4 text-right tabular-nums">
-                      {formatCurrency(row.usdIncome, "USD")}
+                      <Price amount={row.usdIncome} currency="USD" />
                     </td>
                     <td className="py-2 pr-4">
                       <div className="h-3 w-full rounded-sm bg-muted">
@@ -222,24 +222,24 @@ export function MonthlyMovementsTable({ monthlyData, movementsByType, selectedYe
                       </div>
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums">
-                      {formatCurrency(row.arsIncome, "ARS")}
+                      <Price amount={row.arsIncome} currency="ARS" />
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums text-red-600">
                       {row.usdExpense > 0
-                        ? `-${formatCurrency(row.usdExpense, "USD")}`
-                        : formatCurrency(0, "USD")}
+                        ? <>-<Price amount={row.usdExpense} currency="USD" /></>
+                        : <Price amount={0} currency="USD" />}
                     </td>
                     <td className="py-2 pr-4 text-right tabular-nums text-red-600">
                       {row.arsExpense > 0
-                        ? `-${formatCurrency(row.arsExpense, "ARS")}`
-                        : formatCurrency(0, "ARS")}
+                        ? <>-<Price amount={row.arsExpense} currency="ARS" /></>
+                        : <Price amount={0} currency="ARS" />}
                     </td>
                     <td
                       className={`py-2 text-right tabular-nums font-semibold ${
                         row.netUsd >= 0 ? "text-emerald-600" : "text-red-600"
                       }`}
                     >
-                      {formatCurrency(row.netUsd, "USD")}
+                      <Price amount={row.netUsd} currency="USD" />
                     </td>
                   </tr>
                 );
@@ -250,29 +250,17 @@ export function MonthlyMovementsTable({ monthlyData, movementsByType, selectedYe
                 <td className="py-2 pr-4">Total</td>
                 {selectedType === "all" && <td className="py-2 pr-4" />}
                 <td className="py-2 pr-4 text-right tabular-nums">
-                  {formatCurrency(
-                    filteredMonthlyData.reduce((s, r) => s + r.usdIncome, 0),
-                    "USD"
-                  )}
+                  <Price amount={filteredMonthlyData.reduce((s, r) => s + r.usdIncome, 0)} currency="USD" />
                 </td>
                 <td className="py-2 pr-4" />
                 <td className="py-2 pr-4 text-right tabular-nums">
-                  {formatCurrency(
-                    filteredMonthlyData.reduce((s, r) => s + r.arsIncome, 0),
-                    "ARS"
-                  )}
+                  <Price amount={filteredMonthlyData.reduce((s, r) => s + r.arsIncome, 0)} currency="ARS" />
                 </td>
                 <td className="py-2 pr-4 text-right tabular-nums text-red-600">
-                  -{formatCurrency(
-                    filteredMonthlyData.reduce((s, r) => s + r.usdExpense, 0),
-                    "USD"
-                  )}
+                  -<Price amount={filteredMonthlyData.reduce((s, r) => s + r.usdExpense, 0)} currency="USD" />
                 </td>
                 <td className="py-2 pr-4 text-right tabular-nums text-red-600">
-                  -{formatCurrency(
-                    filteredMonthlyData.reduce((s, r) => s + r.arsExpense, 0),
-                    "ARS"
-                  )}
+                  -<Price amount={filteredMonthlyData.reduce((s, r) => s + r.arsExpense, 0)} currency="ARS" />
                 </td>
                 <td
                   className={`py-2 text-right tabular-nums ${
@@ -281,10 +269,7 @@ export function MonthlyMovementsTable({ monthlyData, movementsByType, selectedYe
                       : "text-red-600"
                   }`}
                 >
-                  {formatCurrency(
-                    filteredMonthlyData.reduce((s, r) => s + r.netUsd, 0),
-                    "USD"
-                  )}
+                  <Price amount={filteredMonthlyData.reduce((s, r) => s + r.netUsd, 0)} currency="USD" />
                 </td>
               </tr>
             </tfoot>

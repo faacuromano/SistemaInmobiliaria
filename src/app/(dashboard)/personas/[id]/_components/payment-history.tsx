@@ -2,7 +2,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";
+import { Price } from "@/components/shared/price";
 import { MOVEMENT_TYPE_LABELS } from "@/lib/constants";
 import {
   ArrowDownLeft,
@@ -121,7 +122,7 @@ export function PaymentHistory({ movements }: Props) {
                             }`}
                           >
                             {a.isIncome ? "+" : "-"}
-                            {formatCurrency(a.value, a.currency)}
+                            <Price amount={a.value} currency={a.currency as "USD" | "ARS"} />
                           </p>
                         ))}
                       </div>

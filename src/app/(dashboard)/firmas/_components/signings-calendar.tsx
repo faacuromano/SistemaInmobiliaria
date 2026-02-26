@@ -86,6 +86,12 @@ function truncate(text: string, max: number): string {
   return text.slice(0, max) + "...";
 }
 
+/** Extract YYYY-MM-DD from a signing date using UTC to avoid timezone date shift */
+function utcDateStr(date: Date | string): string {
+  const d = new Date(date);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+}
+
 export function SigningsCalendar({
   signings,
   weekStart,
@@ -119,11 +125,11 @@ export function SigningsCalendar({
   );
 
   // Build a lookup map: "YYYY-MM-DD|HH:MM" -> SigningRow[]
+  // Uses UTC date extraction to avoid timezone date-shift (signing dates are stored as UTC midnight)
   const slotMap = useMemo(() => {
     const map = new Map<string, SigningRow[]>();
     for (const signing of signings) {
-      const d = new Date(signing.date);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const dateStr = utcDateStr(signing.date);
       const key = `${dateStr}|${signing.time}`;
       const existing = map.get(key) || [];
       existing.push(signing);
@@ -132,13 +138,12 @@ export function SigningsCalendar({
     return map;
   }, [signings]);
 
-  // Detect out-of-hours signings for each date
+  // Detect out-of-hours signings for each date (UTC extraction to match slotMap keys)
   const outOfHoursSignings = useMemo(() => {
     const result = new Map<string, SigningRow[]>();
     for (const signing of signings) {
       if (!configuredTimes.has(signing.time)) {
-        const d = new Date(signing.date);
-        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const dateStr = utcDateStr(signing.date);
         const existing = result.get(dateStr) || [];
         existing.push(signing);
         result.set(dateStr, existing);
