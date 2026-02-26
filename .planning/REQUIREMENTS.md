@@ -17,11 +17,11 @@
 
 ### Dynamic Calendar
 
-- [ ] **DCAL-01**: Signing calendar renders time slots generated from business hours config (30-min intervals)
-- [ ] **DCAL-02**: Calendar shows only enabled days (dynamic column count, not hardcoded 5)
-- [ ] **DCAL-03**: Break periods appear as visual separator rows with their labels
+- [x] **DCAL-01**: Signing calendar renders time slots generated from business hours config (30-min intervals)
+- [x] **DCAL-02**: Calendar shows only enabled days (dynamic column count, not hardcoded 5)
+- [x] **DCAL-03**: Break periods appear as visual separator rows with their labels
 - [ ] **DCAL-04**: Existing signings at times outside configured hours are still visible with an "out of hours" indicator
-- [ ] **DCAL-05**: Week navigation and date range queries adapt to configured days
+- [x] **DCAL-05**: Week navigation and date range queries adapt to configured days
 
 ### Bug Fix
 
@@ -61,11 +61,11 @@
 | BHRS-05 | Phase 1: Business Hours Configuration | Complete |
 | BHRS-06 | Phase 1: Business Hours Configuration | Complete |
 | BHRS-07 | Phase 1: Business Hours Configuration | Complete |
-| DCAL-01 | Phase 2: Dynamic Signing Calendar | Pending |
-| DCAL-02 | Phase 2: Dynamic Signing Calendar | Pending |
-| DCAL-03 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-01 | Phase 2: Dynamic Signing Calendar | Complete |
+| DCAL-02 | Phase 2: Dynamic Signing Calendar | Complete |
+| DCAL-03 | Phase 2: Dynamic Signing Calendar | Complete |
 | DCAL-04 | Phase 2: Dynamic Signing Calendar | Pending |
-| DCAL-05 | Phase 2: Dynamic Signing Calendar | Pending |
+| DCAL-05 | Phase 2: Dynamic Signing Calendar | Complete |
 | BFIX-01 | Phase 3: Hydration Fix | Pending |
 
 **Coverage:**
