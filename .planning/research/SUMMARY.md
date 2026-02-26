@@ -1,178 +1,171 @@
 # Project Research Summary
 
-**Project:** Sistema Inmobiliaria — Configurable Business Hours Calendar (Milestone 2)
-**Domain:** ERP scheduling configuration — dynamic weekly signing calendar with admin-configurable business hours
-**Researched:** 2026-02-25
+**Project:** Sistema Inmobiliaria — QA, Testing Infrastructure & Lot Visualization
+**Domain:** Real estate ERP — pre-delivery quality hardening
+**Researched:** 2026-02-26
 **Confidence:** HIGH
 
 ## Executive Summary
 
-This milestone adds configurable business hours to the existing signing calendar in a real estate ERP. The current calendar has hardcoded Mon-Fri hours and a fixed lunch break, which makes it inflexible for offices with different schedules. The work is fundamentally a parametric refactoring: replace hardcoded constants (`TIME_SLOTS`, `DAY_LABELS`, `getWeekDates()`, the morning/afternoon separator) with props driven by a `BusinessHoursConfig` object stored in the existing `SystemConfig` table. No new dependencies are required — the entire implementation uses Next.js 15 server components, react-hook-form, Zod, date-fns, and shadcn/ui, all of which are already installed in the project.
+Sistema Inmobiliaria is a feature-complete real estate ERP built on Next.js 15, Prisma, and PostgreSQL. The codebase has never had a test framework installed — the only QA is a manual smoke checklist in `TESTING.md`. The immediate goal is to build a testing infrastructure and get the application into a deliverable, professionally hardened state before client handoff. Research shows the codebase has a clean natural split between pure utility functions (zero dependencies, immediate testability) and framework-entangled server actions (require mocking auth, Prisma, and cache invalidation simultaneously), which directly informs the recommended phase order.
 
-The recommended approach is a strict bottom-up build order: foundation types and Zod schema first, then the server read/write layer, then the settings UI, and finally the calendar integration. This ordering ensures each layer is independently testable before the next depends on it. The critical algorithm is a pure `generateTimeSlots(config)` function using date-fns that replaces the hardcoded time slot array. The config is fetched server-side in `firmas/page.tsx` and passed as props, following the same pattern already used for all other SystemConfig values in the project.
+The recommended approach is Vitest as the test runner (Vite-native, Jest-compatible API, no transform configuration needed), with `jest-mock-extended` for type-safe Prisma mocking. Testing should be introduced in three layers: pure function unit tests first (no mocking at all), then mocked-Prisma unit tests for model-layer functions, then integration tests for server actions. E2E testing with Playwright is explicitly deferred — it is expensive to maintain and the existing manual smoke checklist already covers end-to-end flows adequately for a single-client handoff. The lot visualization work (manzana grouping, detail panel) is already built and needs only polish, not new architecture.
 
-The primary risk is data integrity: existing SigningSlot records must never disappear from the calendar when business hours are changed. Break periods and hours configuration affect only which empty slots are available for new bookings — existing appointments must always render, with an out-of-hours indicator if they fall outside the new config. A secondary risk is JSON schema drift in the SystemConfig text column; this is mitigated by always parsing stored JSON through the Zod schema with safe defaults, and never trusting raw stored values. Both risks are well understood and have clear prevention strategies.
+The dominant risks fall into two categories. First, financial logic risks: floating-point equality failures in money tests, duplicate algorithm divergence between `calculateInstallmentPreview` and `generateInstallments`, and the `originalAmount` corruption on a second refuerzo recalculation — all three are high-severity and must be caught by tests before delivery. Second, testing infrastructure risks: every server action test will fail silently if `requirePermission` is not mocked first, and Prisma's `Decimal` type serialization produces `NaN` or `[object Object]` in the UI if the action layer does not serialize correctly. Setting up proper test helpers for both concerns before writing any business logic tests will prevent rework.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-Zero new dependencies are needed. The existing stack provides everything required: Next.js App Router for server-side config fetching (no API route needed), react-hook-form with `useFieldArray` for the dynamic breaks list, Zod for schema validation including cross-field refinements, date-fns 4.1.0 for time slot generation, and shadcn/ui components (Switch, Input, Card, Form) for the settings UI. The existing `SystemConfig` key-value model handles storage of the business hours JSON blob under the key `"business_hours"`.
+The project already has a mature production stack (Next.js 15, Prisma, Auth.js v5, shadcn/ui). What needs to be added is purely the testing layer. Research confirms Vitest is the correct choice over Jest for this codebase: Next.js 15 uses Vite internals, Tailwind CSS 4 is Vite-based, and Jest has documented incompatibilities with Vite plugin configuration. Vitest provides an identical Jest API with zero transform configuration.
 
 **Core technologies:**
-- **Next.js 15 (App Router):** Server component fetches config in `firmas/page.tsx`, passes as props — eliminates client-side loading flash
-- **react-hook-form 7.71.2 + useFieldArray:** Manages the dynamic break periods list; already integrated throughout the app
-- **Zod 3.25.76:** Validates the `BusinessHoursConfig` schema with cross-field `.refine()` checks (opening before closing, breaks within hours, no overlapping breaks)
-- **date-fns 4.1.0:** `parse`, `addMinutes`, `format` power the `generateTimeSlots()` pure utility function
-- **shadcn/ui (radix-ui 1.4.3):** Switch for day toggles, `<Input type="time">` for time pickers — all installed; no new UI components needed
-- **SystemConfig (Prisma key-value):** Single JSON blob under key `"business_hours"` in the existing `systemConfigModel.get/set` pattern
+- `vitest ^3.0`: Test runner — Vite-native, Jest-compatible API, no transform config needed
+- `@testing-library/react ^16`: Component tests for client components — well-established, framework-agnostic
+- `jsdom ^26`: Browser environment simulation — required by Vitest for React component tests
+- `jest-mock-extended ^3`: Type-safe deep mocks of PrismaClient — Prisma's own recommendation
+- `@vitest/coverage-v8 ^3.0`: Code coverage reporting — native V8 provider, no instrumentation overhead
+- `@playwright/test ^1.50`: E2E tests — deferred to post-delivery; not needed for handoff
 
 ### Expected Features
 
-**Must have (table stakes — this milestone):**
-- Opening/closing time inputs (HH:MM) with Zod validation (opening < closing)
-- Working day toggles (Mon-Sun, default Mon-Fri)
-- Multiple custom break periods (array of `{start, end, label?}`) with overlap and range validation
-- `generateTimeSlots(config)` pure function — replaces hardcoded `TIME_SLOTS` array with 30-min slots excluding breaks
-- `getEnabledWeekDates(config, weekStart)` — replaces hardcoded 5-day generation
-- Calendar renders dynamic slots and columns from config (not hardcoded)
-- Break separator rows generated from config (not the single hardcoded morning/afternoon divider)
-- Server-side config fetch in `firmas/page.tsx`, passed as props to calendar
-- `DEFAULT_BUSINESS_HOURS` constant fallback (Mon-Fri 09:00-17:00, lunch 12:00-14:00) for fresh installs
+Research identified features in three tiers based on delivery criticality.
 
-**Should have (add after user validation — v1.x):**
-- Live preview in settings UI — reduces admin trial-and-error when configuring hours
-- Config change impact warning — alerts when future signings fall outside new hours (query SigningSlots, count affected)
-- Named break labels — "Almuerzo" / "Descanso" shown in calendar separator rows
+**Must have (table stakes — P1):**
+- Unit tests for `generateInstallments()` and `calculateInstallmentPreview()` with parity assertions — highest divergence risk
+- Unit tests for `recalculateInstallments()` with Prisma mock — covers refuerzo corruption edge case
+- Unit tests for `hasPermission()` RBAC matrix — 4 roles x 16 permissions including negative assertions
+- Build/lint/typecheck gates clean (`tsc --noEmit`, `eslint`, `next build`)
+- Manual smoke test run against seed data with all 13 TESTING.md sections signed off
+- Lot grid: block (manzana) grouping and detail panel polish (already built, needs refinement)
 
-**Defer (v2+):**
-- Google Calendar sync — explicitly deferred per PROJECT.md; requires OAuth2 infrastructure
-- Per-day different hours — out of scope (same schedule for all enabled days); adds disproportionate UI/rendering complexity
-- Customer self-booking portal — anti-feature for this internal ERP; staff books all signings
-- Configurable slot duration — anti-feature; variable row heights create significant grid complexity for minimal gain
+**Should have (differentiators — P2):**
+- Automated `npm test` script as a living safety net and professional delivery signal
+- View toggle persistence via localStorage (grid vs list preference)
+- Lot grid print view (`@media print` CSS only) for client meetings
+- Integration tests for `sale.actions.ts` and `payment.actions.ts` (mocked auth + Prisma)
+
+**Defer (v2+ or post-delivery):**
+- E2E Playwright tests — brittle, slow, expensive to maintain for a single-client handoff
+- Geographic/satellite map — wrong mental model; manzana grid solves the actual need
+- Real-time WebSocket updates — `revalidatePath` is sufficient for concurrent user count
+- 100% code coverage requirement — drives testing of implementation details, not risk
 
 ### Architecture Approach
 
-The architecture follows the existing layered pattern precisely: Zod schema in `src/schemas/`, a pure utility library in `src/lib/business-hours.ts`, server actions in `src/server/actions/`, a client form component in the configuracion page's `_components/` folder, and calendar changes via prop-drilling from the server component page. The only new files are the schema, the utility library, and the settings UI component. All other changes are modifications to existing files. The grid column count must be derived from a single `dayCount` variable using an inline `style` attribute — dynamic Tailwind grid classes get purged at build time.
+The testing infrastructure maps cleanly onto the existing four-layer architecture. The test directory structure mirrors the source directory: `__tests__/unit/lib/` for pure functions (zero mocking), `__tests__/unit/models/` for Prisma-backed functions (mocked Prisma), and `__tests__/integration/actions/` for server actions (mocked auth + Prisma + cache). The lot visualization component tree follows a pure-display pattern: `LotsSection` owns all state, `LotsGrid` and `LotDetailPanel` are pure display components that receive data via props — this makes them straightforwardly testable with `@testing-library/react`.
 
 **Major components:**
-1. `src/schemas/business-hours.schema.ts` — Zod schema for `BusinessHoursConfig` with all cross-field validations; foundation for everything else
-2. `src/lib/business-hours.ts` — Pure functions: `generateTimeSlots()`, `getEnabledDayLabels()`, `DEFAULT_BUSINESS_HOURS` constant
-3. `src/server/actions/config.actions.ts` (modified) — `getBusinessHours()` and `updateBusinessHours()` with safe parse/fallback logic
-4. `src/app/(dashboard)/configuracion/_components/BusinessHoursSection.tsx` — Client form with react-hook-form + useFieldArray, save to server action
-5. `src/app/(dashboard)/firmas/page.tsx` (modified) — Fetch config server-side, generate time slots, pass as props
-6. `src/app/(dashboard)/firmas/_components/signings-calendar.tsx` (modified) — Accept `timeSlots` and `dayConfig` props, dynamic CSS grid, dynamic break separators
+1. `__tests__/unit/lib/` — Pure function tests (installment-generator, sale-helpers, rbac, exchange-rate, format)
+2. `__tests__/unit/schemas/` — Zod schema validation tests (sale.schema, person.schema)
+3. `__tests__/integration/actions/` — Server action tests with mocked auth + Prisma + next/cache
+4. `LotsSection` (orchestrator) + `LotsGrid` + `LotDetailPanel` (pure display) — component test targets
+5. `vitest.setup.ts` + shared test helpers — auth mocking, money assertion helpers
 
 ### Critical Pitfalls
 
-1. **Orphaned signings after hours change** — Calendar MUST render all existing SigningSlots regardless of config; break config only controls which empty slots are clickable for new bookings. Never filter existing appointment data by the config. Add "fuera de horario" visual indicator.
+1. **Floating-point equality in money tests** — Never use `toBe()` on calculated amounts. Use `toBeCloseTo(n, 2)` universally, or create a `expectMoney()` helper. Affects every financial test. Set this up before writing any assertions.
 
-2. **Hardcoded column count in 6+ locations** — The number "5" (Mon-Fri) is embedded in the CSS grid template, `getWeekDates()`, `DAY_LABELS` array, separator colspan, date range query, and calendar row grid. All must be parameterized simultaneously from a single `dayCount` source. Use `style={{ gridTemplateColumns: ... }}` (not dynamic Tailwind classes which get purged).
+2. **`requirePermission` blocks all action tests without session mocking** — Every server action calls `requirePermission()` which calls `auth()` which throws a redirect. Create a `mockAuthenticatedUser(role)` shared helper and mock it as the FIRST thing in every action test file.
 
-3. **JSON schema drift in SystemConfig** — The `business_hours` text column has no versioning. Parse stored JSON through Zod with safe defaults: `{ ...DEFAULT_BUSINESS_HOURS, ...JSON.parse(stored) }`. Never trust raw stored values; always apply schema and merge with defaults.
+3. **Duplicate algorithm divergence between preview and generator** — `calculateInstallmentPreview` and `generateInstallments` implement identical month-clamping logic independently. Write a parity test that feeds the same inputs to both and asserts identical outputs. This is the single highest-risk bug for client delivery.
 
-4. **Config fetch crash on missing key** — `systemConfigModel.get("business_hours")` returns `null` on fresh install. `getBusinessHours()` must handle: key not found → return defaults, invalid JSON → return defaults, partial JSON → merge with defaults. A config read must never crash the signing calendar page.
+4. **`originalAmount` corruption on second refuerzo** — `recalculateInstallments()` must NOT overwrite `originalAmount` on the second call. Test with a two-step sequence: apply first refuerzo, verify `originalAmount` set; apply second refuerzo, verify `originalAmount` not overwritten. CONCERNS.md explicitly flags this as a known risk.
 
-5. **revalidatePath scope after config save** — `updateBusinessHours()` must call `revalidatePath("/firmas")` in addition to `revalidatePath("/configuracion")`. Without this, the calendar page retains stale server-side cached slots after a business hours change until manual refresh.
+5. **`recalculateInstallments` runs outside the transaction** — `payment.actions.ts` deliberately runs recalculation after closing the Prisma transaction. Tests that assume atomicity model the system incorrectly. Write a specific test for the partial-failure case (payment recorded, recalculation throws).
+
+---
 
 ## Implications for Roadmap
 
-Research establishes a clear 5-phase build order driven by dependency chain. Each phase can be tested independently before the next depends on it.
+Based on combined research, a three-phase structure is recommended. The ordering is driven by the dependency graph: infrastructure must exist before tests, pure function tests are free of mocking complexity and should come first to build confidence, and delivery gates (build, lint, smoke) must be validated last when everything else is in place.
 
-### Phase 1: Foundation — Types, Schema, Defaults, Utilities
+### Phase 1: Testing Infrastructure Setup
 
-**Rationale:** Everything downstream depends on the `BusinessHoursConfig` type and `businessHoursSchema`. The Zod schema is the single source of truth for what valid config looks like. The `DEFAULT_BUSINESS_HOURS` constant must exist before any code path that reads config. The slot generation utility must be pure and independently testable.
-**Delivers:** `BusinessHoursConfig` TypeScript type, `businessHoursSchema` Zod schema with all validations, `DEFAULT_BUSINESS_HOURS` constant, `generateTimeSlots()` pure function, `getEnabledDayLabels()` pure function — all in `src/lib/business-hours.ts` and `src/schemas/business-hours.schema.ts`
-**Addresses:** Business hours schema, slot generation algorithm, default fallback, enabled days structure
-**Avoids:** Pitfall #5 (JSON schema drift), #8 (break validation edge cases), #9 (DAY_LABELS index coupling), #11 (off-by-one at closing time), #13 (empty calendar on fresh install)
+**Rationale:** Nothing else can be built until the test runner is installed and configured. The shared helpers (auth mock, money assertion helper) prevent rework across all subsequent phases if established first.
+**Delivers:** Working `npm test` command with zero tests failing; Vitest config with jsdom environment; `vitest.setup.ts` with `@testing-library/jest-dom`; shared `mockAuthenticatedUser()` and `expectMoney()` helpers.
+**Addresses:** FEATURES.md — automated `npm test` script; STACK.md — Vitest installation.
+**Avoids:** PITFALLS #1 (floating-point) and #5 (auth mocking) — both are infrastructure concerns that contaminate every test if not addressed upfront.
 
-### Phase 2: Server Layer — Config Read/Write Actions
+### Phase 2: Pure Function Unit Tests
 
-**Rationale:** The settings UI and the calendar page both need a stable, safe config read/write API before they can be built. The server actions must gracefully handle null, invalid JSON, and partial configs before any client code calls them.
-**Delivers:** `getBusinessHours()` server action with safe parse/fallback, `updateBusinessHours()` server action with Zod validation and dual `revalidatePath` calls
-**Uses:** `businessHoursSchema` from Phase 1, `systemConfigModel.get/set` (existing), `DEFAULT_BUSINESS_HOURS` from Phase 1
-**Implements:** Server actions layer in `src/server/actions/config.actions.ts`
-**Avoids:** Pitfall #7 (config fetch crash on missing/invalid key), #10 (revalidatePath scope)
+**Rationale:** Pure functions have zero dependencies — no mocking, no setup, maximum ROI, maximum coverage confidence. Tackling these first proves the test infrastructure works and catches the highest-risk business logic bugs before touching framework integration.
+**Delivers:** Test suites for `installment-generator.ts`, `sale-helpers.ts` (with parity assertions), `rbac.ts` (full 4x16 matrix including negative assertions), `exchange-rate.ts` (mocked fetch), `format.ts`.
+**Uses:** STACK.md — Vitest + pure TypeScript (no React testing library needed here).
+**Implements:** ARCHITECTURE.md `__tests__/unit/lib/` layer.
+**Avoids:** PITFALLS #3 (parity divergence), #4 (date edge cases), #8 (permission matrix), #9 (zero-rate fallback), #10 (preview/generator parity).
 
-### Phase 3: Settings UI — BusinessHoursSection Component
+### Phase 3: Mocked Integration Tests
 
-**Rationale:** Building the settings form after the server layer means the form can immediately call real server actions and be tested end-to-end. Settings changes can be validated before touching the calendar.
-**Delivers:** `BusinessHoursSection` client component in `configuracion/_components/`, integrated into `configuracion/page.tsx` as a new tab/card — time pickers, day toggles, dynamic break list with add/remove
-**Uses:** react-hook-form + useFieldArray, `businessHoursSchema`, `updateBusinessHours()` from Phase 2, shadcn/ui Switch + Input + Button + Form
-**Implements:** Business hours settings form component
-**Avoids:** Pitfall #8 (break validation edge cases — form shows inline Zod errors)
+**Rationale:** Server action tests require all three mocks (auth, Prisma, next/cache) to be in place. By phase 3 the infrastructure helpers from Phase 1 make this straightforward. These tests cover the highest-severity financial flows that cannot be verified by pure function tests.
+**Delivers:** Test suites for `installment-recalculator.ts` (Prisma mock), `sale.actions.ts`, `payment.actions.ts` — including the two-step refuerzo sequence and partial-failure case.
+**Uses:** STACK.md — `jest-mock-extended` Prisma mock, shared auth helpers from Phase 1.
+**Implements:** ARCHITECTURE.md `__tests__/unit/models/` and `__tests__/integration/actions/` layers.
+**Avoids:** PITFALLS #2 (mock vs real DB — acknowledged gap), #3 (transaction boundary), #6 (Decimal serialization), #7 (double recalculation).
 
-### Phase 4: Calendar Integration — Dynamic SigningsCalendar
+### Phase 4: Delivery Gates and Lot Grid Polish
 
-**Rationale:** Calendar changes are the highest-risk phase because they modify a complex existing component with 6+ interdependent hardcoded values. Building this last means all the supporting infrastructure (schema, utilities, server layer, settings) is proven before touching the calendar.
-**Delivers:** Modified `signings-calendar.tsx` accepting `timeSlots` and `dayConfig` props, dynamic CSS grid columns via inline style, dynamic break separator rows from config, "fuera de horario" indicator for out-of-range signings, updated `firmas/page.tsx` with server-side config fetch
-**Uses:** `generateTimeSlots()` and `getEnabledDayLabels()` from Phase 1, `getBusinessHours()` from Phase 2
-**Implements:** Full calendar integration, end-to-end flow from SystemConfig to rendered grid
-**Avoids:** Pitfall #1 (orphaned signings), #2 (break overlap hides appointments), #3 (hardcoded column count in 6+ locations), #4 (form allows booking outside hours — soft warning), #12 (morning/afternoon separator follows breaks)
-
-### Phase 5: Hydration Fix — NotificationBell
-
-**Rationale:** This is an independent bug fix for a React hydration mismatch in `NotificationBell` (timeAgo uses `new Date()` on server and client, producing different output). It is architecturally unrelated to the business hours work but is included in this milestone. Can be built in parallel with any phase.
-**Delivers:** Hydration-safe `NotificationBell` using `useState("")` + `useEffect` pattern, consistent with `HeaderInfo` sibling component
-**Avoids:** Pitfall #6 (hydration mismatch in NotificationBell)
+**Rationale:** Final gate before handoff. Build, lint, and typecheck must pass cleanly. Smoke test run formalizes QA sign-off. Lot grid polish is low-complexity, already-built UI work that belongs at the end where UI state is stable.
+**Delivers:** Clean `tsc --noEmit`, `eslint`, and `next build` runs; completed TESTING.md smoke sign-off; lot grid manzana grouping refinements; detail panel polish; optional localStorage view persistence.
+**Addresses:** FEATURES.md — all P1 delivery gates and lot visualization items.
+**Avoids:** PITFALLS #2 (mock vs real DB gap acknowledged in smoke test) — the smoke test on real data is the compensating control for Prisma behavior that mocks cannot verify.
 
 ### Phase Ordering Rationale
 
-- **Schema before everything:** The Zod schema defines the data contract. Without it, the server layer cannot validate, the form cannot resolve, and the calendar cannot type-check its props.
-- **Server layer before UI:** Both the settings form and the calendar page call server functions. Building these in isolation (before the form exists) allows testing with Prisma Studio directly.
-- **Settings before calendar:** Verifying that config saves correctly end-to-end (form → action → SystemConfig) reduces debugging surface when the calendar integration is added.
-- **Calendar last:** The calendar modification is the most complex change (6+ locations, existing component with interactions). All dependencies are proven before this phase starts.
-- **Phase 5 is independent:** The NotificationBell fix touches no business hours code. It can be developed in parallel or appended as a cleanup step.
+- Infrastructure before tests (Phase 1 → 2/3): shared helpers prevent rework if set up first
+- Pure functions before integration (Phase 2 → 3): establishes test confidence with zero mocking complexity; any Vitest configuration mistakes surface cheaply here
+- Tests before delivery gates (Phases 2/3 → 4): build and smoke test only have value when the code under test is already verified
+- Lot grid polish last (Phase 4): UI polish on top of stable, tested business logic
 
 ### Research Flags
 
-Phases with standard, well-understood patterns (skip additional research):
-- **Phase 1 (Foundation):** Pure TypeScript/Zod — standard patterns, HIGH confidence
-- **Phase 2 (Server Layer):** Follows exact existing SystemConfig pattern, HIGH confidence
-- **Phase 3 (Settings UI):** Follows existing form patterns in the codebase, MEDIUM-HIGH confidence
-- **Phase 5 (Hydration Fix):** Standard Next.js useState/useEffect pattern, HIGH confidence
+Phases likely needing deeper research during planning:
+- **Phase 3:** The partial-failure recovery path for `recalculateInstallments` after transaction close is undocumented behavior — needs code archaeology in `payment.actions.ts` before writing the test.
+- **Phase 3:** Prisma `Decimal` serialization behavior in mocked vs real environments — `@electric-sql/pglite` is already in `node_modules` and could replace mocked Prisma for critical financial flows in a future iteration.
 
-Phases that may benefit from targeted implementation review:
-- **Phase 4 (Calendar Integration):** The existing `signings-calendar.tsx` has subtle coupling between its grid template, date generation, and separator logic. A careful read of all 6+ hardcoded locations before writing code is essential. Not uncertain — just complex.
+Phases with standard patterns (skip research-phase):
+- **Phase 1:** Vitest installation and configuration is fully documented with official examples; no additional research needed.
+- **Phase 2:** Pure function testing patterns are universal — no domain-specific research required.
+- **Phase 4:** Build/lint/typecheck gates are standard Next.js commands; lot grid components are already built.
+
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Direct codebase analysis of package.json and all existing components. Zero new dependencies needed; all tools verified present and at correct versions. |
-| Features | MEDIUM | Core feature set derived from codebase analysis and PROJECT.md requirements. Differentiator features (live preview, impact warning) based on domain knowledge without external source verification. |
-| Architecture | HIGH | Direct codebase analysis of signings-calendar.tsx (340 lines), system-config-section.tsx, firmas/page.tsx. Build order confirmed by dependency analysis. |
-| Pitfalls | HIGH | Most pitfalls identified from direct codebase analysis (hardcoded "5" locations, NULL handling, revalidatePath scope). These are concrete code issues, not speculative risks. |
+| Stack | HIGH | Vitest is the documented choice for Vite-based Next.js; all version numbers from official releases |
+| Features | MEDIUM-HIGH | Feature list derived from direct codebase analysis of existing files; priorities are judgement calls |
+| Architecture | HIGH | Test structure derived from actual codebase shape; component responsibilities directly read from source files |
+| Pitfalls | HIGH | All pitfalls grounded in specific file:line references in the codebase, not hypothetical risks |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **`useFieldArray` API surface:** Confirmed present in project but web verification unavailable. The `fields, append, remove` pattern is standard and extremely stable, but treat as MEDIUM confidence until implementation confirms behavior with React 19 + Next.js 15.
-- **`<input type="time">` browser rendering:** Standard HTML5 API, but exact rendering in the admin's browser environment (likely Chrome/Edge on Windows) should be verified during Phase 3 implementation.
-- **Out-of-hours signing indicator (Phase 4):** Research identifies the need to show existing signings outside new hours, but the exact UI treatment ("fuera de horario" badge, greyed row, etc.) is not specified. Requires a brief design decision during Phase 4 planning.
-- **Zod `.passthrough()` vs merge strategy for schema evolution:** Research recommends `{ ...DEFAULT, ...stored }` merge. The interaction with Zod's parse behavior should be confirmed during Phase 1 implementation.
+- **Real DB vs mock gap:** Mocked Prisma tests cannot catch actual SQL behavior bugs (Decimal serialization, race conditions). The `@electric-sql/pglite` package is already installed and could provide an in-process test database. Evaluate during Phase 3 planning whether the investment is worthwhile for delivery timeline.
+- **Smoke test scope:** The manual TESTING.md smoke checklist has 13 sections but no seed data script exists yet. Confirm whether seed data needs to be created as part of Phase 4 setup or already exists in staging.
+- **Second refuerzo recovery path:** The behavior when `recalculateInstallments` throws after a payment is committed is undocumented. This path needs to be read in `payment.actions.ts` lines 290-310 before writing the test in Phase 3.
+
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- Direct codebase analysis: `src/app/(dashboard)/firmas/_components/signings-calendar.tsx` — grid structure, TIME_SLOTS, DAY_LABELS, separator logic
-- Direct codebase analysis: `src/app/(dashboard)/configuracion/_components/system-config-section.tsx` — react-hook-form + useActionState pattern, SystemConfig integration
-- Direct codebase analysis: `src/server/models/system-config.model.ts` — get/set key-value API
-- Direct codebase analysis: `src/schemas/system-config.schema.ts` — existing Zod schema patterns
-- Direct codebase analysis: `prisma/schema.prisma` — SystemConfig and SigningSlot model definitions
-- Direct codebase analysis: `package.json` — Next.js 15.5.12, date-fns 4.1.0, react-hook-form 7.71.2, Zod 3.25.76, radix-ui 1.4.3 (all verified)
-- `src/components/ui/switch.tsx` — confirmed present in project
+- Direct codebase analysis — `src/lib/installment-generator.ts`, `installment-recalculator.ts`, `sale-helpers.ts`, `rbac.ts`, `payment.actions.ts`, `sale.actions.ts`
+- Official Vitest documentation — configuration, jsdom environment, coverage providers
+- Prisma official testing guide — `jest-mock-extended` recommendation for unit testing
+- Next.js 15 documentation — server component testability limitations, recommended test runners
 
 ### Secondary (MEDIUM confidence)
-- Training data: react-hook-form `useFieldArray` API (`fields, append, remove`) — standard, stable API
-- Training data: HTML5 `<input type="time">` behavior and HH:MM format
-- Training data: date-fns v4 ESM-only import patterns
-- PROJECT.md feature constraints and deferred items
+- Community consensus on Vitest vs Jest for Vite-based projects — multiple sources agree Vitest is the correct choice
+- `TESTING.md` smoke checklist — existing 13-section manual QA baseline
 
 ### Tertiary (LOW confidence)
-- Domain knowledge: scheduling UX patterns for internal ERP tools (no external sources available during research — WebSearch/WebFetch unavailable)
+- `@electric-sql/pglite` as in-process test DB — found in `node_modules` but untested in this codebase; would need a spike to validate
 
 ---
-*Research completed: 2026-02-25*
+*Research completed: 2026-02-26*
 *Ready for roadmap: yes*
