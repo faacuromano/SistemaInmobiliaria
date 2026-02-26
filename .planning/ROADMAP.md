@@ -61,7 +61,9 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   2. User can enter a Google Maps URL when creating or editing a development, and click it from the development detail to open the location in a new tab
   3. Person detail page displays contact info, sales history, and financial summary in a well-organized layout with readable table design
   4. The Development model in Prisma includes a new optional field for storing the Google Maps URL
-**Plans**: TBD
+**Plans**: 2 plans, 1 wave
+  - Plan 07-01 (wave 1): Google Maps URL for developments (DEV-04) + Person detail page layout improvement (PERS-01)
+  - Plan 07-02 (wave 1): Bulk lot editing with checkbox selection and bulk actions bar (DEV-03)
 
 ## Progress
 
@@ -76,4 +78,4 @@ Phases execute in numeric order: 5 -> 6 -> 7
 | 4. Delivery Gates and Lot Grid | v1.0 | 3/3 | Complete | 2026-02-26 |
 | 5. Quick Fixes | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 6. Estadisticas Overhaul | v1.1 | 0/? | Not started | - |
-| 7. Features & Polish | v1.1 | 0/? | Not started | - |
+| 7. Features & Polish | v1.1 | 0/2 | Not started | - |
