@@ -1,68 +1,88 @@
-# Sistema Inmobiliaria — Milestone 2: Signing Calendar & UX Fixes
+# Sistema Inmobiliaria
 
 ## What This Is
 
-An ERP for managing real estate developments, lot sales, installment payments, and notary signings. Built with Next.js 15, TypeScript, PostgreSQL, and Prisma. This milestone adds configurable business hours for the signing calendar and fixes a hydration bug.
+A property management ERP for a real estate/construction company, built by Koncepto as closed software for a single client. Manages the full lifecycle of real estate developments: lots, sales, installment plans, cash movements, exchange rates, receipts, and internal communications. The system is feature-complete and approaching delivery — the remaining work is QA, testing, and visual polish.
 
 ## Core Value
 
-The signing calendar must dynamically reflect the business's actual working hours and breaks, configured by administrators — no more hardcoded time slots.
+The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
 
 ## Requirements
 
 ### Validated
 
-- ✓ User authentication with RBAC (4 roles, dynamic permissions) — existing
-- ✓ Development and lot management (CRUD, status tracking) — existing
-- ✓ Person/client management (CLIENTE, PROVEEDOR, AMBOS) — existing
-- ✓ Sale creation with automatic installment generation — existing
-- ✓ Payment collection with dual-currency (USD/ARS) and exchange rate tracking — existing
-- ✓ Extra charge (refuerzo) payment with installment recalculation — existing
-- ✓ Cash movement ledger (14 types) with audit trail — existing
-- ✓ Signing slot scheduling with weekly calendar view — existing
-- ✓ In-app notifications and messaging — existing
-- ✓ Dashboard with KPIs and statistics — existing
-- ✓ System configuration (company info, SMTP, receipts) — existing
-- ✓ Permission management per role — existing
-- ✓ Data import from external sources — existing
+<!-- Shipped and confirmed valuable. -->
+
+- ✓ Authentication with email/password and JWT sessions — existing
+- ✓ RBAC with 4 roles (SUPER_ADMIN, ADMINISTRACION, FINANZAS, COBRANZA) — existing
+- ✓ Development management (INMOBILIARIO, OTROS types) — existing
+- ✓ Lot management with statuses (DISPONIBLE, VENDIDO, CONTADO, CESION, PERMUTA) — existing
+- ✓ Person/Client management (CLIENTE, PROVEEDOR, AMBOS) — existing
+- ✓ Sales system with multiple types (ACTIVA, CANCELADA, COMPLETADA, CONTADO, CESION) — existing
+- ✓ Automatic installment generation with variable plans — existing
+- ✓ Extra charges (refuerzos) with installment recalculation — existing
+- ✓ Cash movements (14 types: CUOTA, SUELDO, COMISION, etc.) — existing
+- ✓ Daily blue dollar exchange rate from dolarapi.com — existing
+- ✓ Payment receipts with auto-generation — existing
+- ✓ Signing slot management with email alerts — existing
+- ✓ Internal messaging between users — existing
+- ✓ Notification system with read/unread tracking — existing
+- ✓ CSV/Excel data import — existing
+- ✓ Audit logging for all operations — existing
+- ✓ Seller/commission tracking — existing
+- ✓ Customer file (ficha) with unified debt and payment history — existing
+- ✓ Supplier management with lot assignments — existing
+- ✓ Responsive layout with mobile sidebar — existing
 
 ### Active
 
-- [ ] Configurable business hours in settings (opening, closing, multiple custom breaks)
-- [ ] Configurable working days (enable/disable each day Mon-Sun)
-- [ ] Dynamic signing calendar that reads business hours from settings
-- [ ] Fix hydration mismatch in NotificationBell component
+<!-- Current scope. Building toward these. -->
+
+- [ ] Lots grid redesign — manzana-grouped visual grid with color-coded statuses and detail panel
+- [ ] Full test coverage — systematic testing across all modules (models, actions, components)
+- [ ] QA pass — bug detection and fixes across all critical business flows
+- [ ] Delivery polish — UI consistency, error handling, edge cases
 
 ### Out of Scope
 
-- Google Calendar sync — planned for future milestone
-- Configurable slot duration — staying at fixed 30-minute intervals
-- Per-day different hours — same schedule applies to all enabled days
-- Lot/Person FK linking in SigningSlot — remains free-text for now
+<!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
+
+- 360° Virtual Tour integration (Koncepto) — deferred, documented separately, will be a future milestone
+- Geographic/satellite map view — client wants manzana grid, not a map
+- Hosting/SSL/Backups — handled at deploy time, not in application code
+- Multi-tenant support — single client deployment
+- OAuth/social login — email/password sufficient for this client
 
 ## Context
 
-- The signing calendar currently has hardcoded time slots in `signings-calendar.tsx`: `["09:00", "09:30", "10:00", "10:30", "11:00", "14:30", "15:00", "15:30", "16:00", "16:30"]`
-- Days are hardcoded to Mon-Fri only
-- `SystemConfig` is a key-value table — business hours config will be stored as JSON under a new key
-- The hydration error in `NotificationBell` is caused by `timeAgo()` calling `new Date()` at render time; the sibling `HeaderInfo` component already uses the correct `useState`/`useEffect` pattern
-- The Radix ID mismatch in the error trace is from a browser extension, not application code
+- **Client**: Single real estate/construction company
+- **Builder**: Koncepto (user's company)
+- **Codebase state**: Feature-complete, ~21 server action files, ~19 model files, 16+ Prisma models
+- **Stack**: Next.js 15 (App Router) + TypeScript + PostgreSQL + Prisma ORM + Auth.js v5
+- **UI**: shadcn/ui + Tailwind CSS 4 + Lucide icons
+- **Dual currency**: All monetary operations support USD/ARS with daily exchange rate
+- **Architecture**: Server-first with Server Components/Actions, layered (presentation → actions → models → Prisma)
+- **Existing codebase map**: `.planning/codebase/` with 7 documents covering stack, architecture, conventions, testing, concerns
 
 ## Constraints
 
-- **Tech stack**: Must use existing SystemConfig key-value table for settings storage
-- **Slot duration**: Fixed at 30 minutes — no configurability needed
-- **Compatibility**: Calendar must gracefully fall back to defaults if no business hours are configured
-- **Performance**: Settings should be fetched server-side and passed as props to avoid client-side API calls
+- **Tech stack**: Next.js 15 + Prisma + PostgreSQL — already established, no changes
+- **Single client**: No multi-tenancy requirements
+- **Currency**: Must support dual USD/ARS operations with blue dollar rate
+- **Roles**: Fixed 4-level RBAC — SUPER_ADMIN, ADMINISTRACION, FINANZAS, COBRANZA
+- **Language**: UI in Spanish, code in English
 
 ## Key Decisions
 
+<!-- Decisions that constrain future work. Add throughout project lifecycle. -->
+
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Store business hours as JSON in SystemConfig | Avoids schema migration; flexible structure for hours + breaks + days | — Pending |
-| Fixed 30-minute slot intervals | Reduces complexity; matches current calendar behavior | — Pending |
-| Same schedule for all enabled days | User requested simplicity over per-day configuration | — Pending |
-| Multiple custom breaks | User wants full flexibility to define any number of break periods | — Pending |
+| Defer 360° tour integration | Separate project with own docs, don't block delivery | — Pending |
+| Manzana grid over geographic map | Client needs functional status view, not geography | — Pending |
+| Full test coverage before delivery | System handles money — bugs are expensive | — Pending |
+| Server-first architecture | Established pattern, no reason to change for remaining work | ✓ Good |
 
 ---
-*Last updated: 2026-02-25 after initialization*
+*Last updated: 2026-02-26 after initialization*
