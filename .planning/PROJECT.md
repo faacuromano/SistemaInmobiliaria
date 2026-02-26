@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A property management ERP for a real estate/construction company, built by Koncepto as closed software for a single client. Manages the full lifecycle of real estate developments: lots, sales, installment plans, cash movements, exchange rates, receipts, and internal communications. The system is feature-complete and approaching delivery — the remaining work is QA, testing, and visual polish.
+A property management ERP for a real estate/construction company, built by Koncepto as closed software for a single client. Manages the full lifecycle of real estate developments: lots, sales, installment plans, cash movements, exchange rates, receipts, and internal communications. The system is feature-complete, tested, and delivery-ready with clean build gates and a polished lot grid visualization.
 
 ## Core Value
 
@@ -34,15 +34,18 @@ The client can manage their entire real estate operation — from lot availabili
 - ✓ Customer file (ficha) with unified debt and payment history — existing
 - ✓ Supplier management with lot assignments — existing
 - ✓ Responsive layout with mobile sidebar — existing
+- ✓ Vitest test infrastructure with auth/Prisma mocks and financial assertions — v1.0
+- ✓ Financial logic tests (installment generation, preview parity, recalculation) — v1.0
+- ✓ Integration tests (sale/payment server actions, partial-failure recovery) — v1.0
+- ✓ Delivery gates (tsc, lint, build — zero errors) — v1.0
+- ✓ Lots grid redesign with manzana grouping, collapsible sections, and status-colored cards — v1.0
+- ✓ Lot detail panel with sale fields, mobile bottom Sheet, and print view — v1.0
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Lots grid redesign — manzana-grouped visual grid with color-coded statuses and detail panel
-- [ ] Full test coverage — systematic testing across all modules (models, actions, components)
-- [ ] QA pass — bug detection and fixes across all critical business flows
-- [ ] Delivery polish — UI consistency, error handling, edge cases
+(No active requirements — start next milestone with `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -53,17 +56,21 @@ The client can manage their entire real estate operation — from lot availabili
 - Hosting/SSL/Backups — handled at deploy time, not in application code
 - Multi-tenant support — single client deployment
 - OAuth/social login — email/password sufficient for this client
+- E2E browser tests (Playwright) — slow, brittle, expensive; unit + integration tests sufficient for single-client delivery
+- 100% code coverage — drives testing implementation details; cover risk areas instead
 
 ## Context
 
 - **Client**: Single real estate/construction company
 - **Builder**: Koncepto (user's company)
-- **Codebase state**: Feature-complete, ~21 server action files, ~19 model files, 16+ Prisma models
+- **Codebase state**: Feature-complete and delivery-ready, ~69,500 LOC TypeScript/TSX, 51 tests passing
 - **Stack**: Next.js 15 (App Router) + TypeScript + PostgreSQL + Prisma ORM + Auth.js v5
-- **UI**: shadcn/ui + Tailwind CSS 4 + Lucide icons
+- **UI**: shadcn/ui + Tailwind CSS 4 + Lucide icons + Radix Collapsible
 - **Dual currency**: All monetary operations support USD/ARS with daily exchange rate
 - **Architecture**: Server-first with Server Components/Actions, layered (presentation → actions → models → Prisma)
-- **Existing codebase map**: `.planning/codebase/` with 7 documents covering stack, architecture, conventions, testing, concerns
+- **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
+- **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
+- **Shipped**: v1.0 Delivery Hardening (2026-02-26)
 
 ## Constraints
 
@@ -80,9 +87,13 @@ The client can manage their entire real estate operation — from lot availabili
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Defer 360° tour integration | Separate project with own docs, don't block delivery | — Pending |
-| Manzana grid over geographic map | Client needs functional status view, not geography | — Pending |
-| Full test coverage before delivery | System handles money — bugs are expensive | — Pending |
+| Manzana grid over geographic map | Client needs functional status view, not geography | ✓ Good — shipped in v1.0 |
+| Full test coverage before delivery | System handles money — bugs are expensive | ✓ Good — 51 tests covering financial logic and server actions |
 | Server-first architecture | Established pattern, no reason to change for remaining work | ✓ Good |
+| Vitest over Jest | Vite-native, no transform config needed for Next.js 15 | ✓ Good |
+| File-level eslint-disable for test files | Preferred over 40+ inline disables for Prisma mock any casts | ✓ Good |
+| Consolidate lot view modes to 2 (grid/table) | CONTEXT.md's compact grid with manzana grouping replaces 3-mode design | ✓ Good |
+| RESERVADO status = gray | Per client preference, not orange | ✓ Good |
 
 ---
-*Last updated: 2026-02-26 after initialization*
+*Last updated: 2026-02-26 after v1.0 milestone*
