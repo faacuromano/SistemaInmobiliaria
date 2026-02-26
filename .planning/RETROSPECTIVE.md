@@ -45,6 +45,50 @@
 
 ---
 
+## Milestone: v1.1 — Bug Fixes & UX Polish
+
+**Shipped:** 2026-02-26
+**Phases:** 3 | **Plans:** 4 | **Sessions:** 1
+
+### What Was Built
+- Dialog spacing fixes for lot and message forms, status-reset bug fix using hidden input pattern
+- Estadisticas overhaul: filterable monthly movements table, color-coded type badges, proportional PARCIAL collection rate, help tooltips
+- Google Maps URL field on developments (full stack: Prisma → Zod → form → detail page with external link)
+- Person detail page redesign: unified contact card, month-grouped payment history with sticky headers, professional table design
+- Bulk lot editing: checkbox selection in lots table, floating actions bar with tag assignment dialog and status dropdown, server-side safety guards (200-lot limit, sales guard)
+
+### What Worked
+- Parallel Wave 1 execution: Plans 07-01 and 07-02 ran simultaneously with zero file conflicts (completely independent subsystems)
+- Small focused plans: 2 tasks per plan kept execution fast and review simple
+- Safety guards as first-class design: bulk operations validated at server level (sales guard, lot limit) rather than relying on UI-only checks
+- Reusing existing DataTable component: added `rowClassName` prop for bulk selection highlighting without duplicating the table
+
+### What Was Inefficient
+- ROADMAP.md progress table again fell out of sync — phases 6 and 7 showed "Not started" and "0/?" despite being complete on disk
+- Summary one_liner field still not populated by executor agents, making automated accomplishment extraction fail (same issue as v1.0)
+- Phase 6 plans field showed "TBD" in roadmap even after planning was complete
+
+### Patterns Established
+- Hidden input pattern for disabled Radix Select — always submit value via hidden input, not relying on disabled Select name attribute
+- Dialog body padding: wrap form fields in `div.space-y-4.px-5.py-4`, keep DialogFooter outside
+- Per-type-per-month Map aggregation on server side for statistics data
+- Color-coded badges using semantic Tailwind: income=green/blue, expense=red/orange
+- Bulk operations pattern: Dialog for actions needing confirmation (tags), DropdownMenu for instant actions (status)
+- Header checkbox as absolute overlay when DataTable Column.label only accepts strings
+
+### Key Lessons
+1. ROADMAP.md progress table sync remains a persistent issue — the `roadmap update-plan-progress` tool doesn't fully update all fields
+2. Summary extraction (one_liner) needs to be part of the executor's SUMMARY template, not optional
+3. Small polish milestones (3 phases, 4 plans) can ship in a single session — ideal for user-reported bug batches
+4. Safety guards in bulk operations should always be server-side — UI can skip states, but server actions are the last line of defense
+
+### Cost Observations
+- Model mix: ~70% opus (executor agents), ~30% sonnet (plan checkers, verifiers)
+- Sessions: 1 (entire milestone completed in single session)
+- Notable: 4 plans completed in ~13 minutes total execution time (3.25min average per plan)
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -52,13 +96,17 @@
 | Milestone | Sessions | Phases | Key Change |
 |-----------|----------|--------|------------|
 | v1.0 | 1 | 4 | Initial milestone — established testing patterns and delivery gates |
+| v1.1 | 1 | 3 | Polish milestone — bug fixes, UX improvements, new features |
 
 ### Cumulative Quality
 
 | Milestone | Tests | Coverage | Zero-Dep Additions |
 |-----------|-------|----------|-------------------|
 | v1.0 | 51 | Scoped (lib, server, schemas) | 1 (Radix Collapsible via shadcn) |
+| v1.1 | 51 | Unchanged | 0 (no new deps) |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. (Awaiting second milestone for cross-validation)
+1. ROADMAP.md progress table sync is a persistent issue — needs automation fix or manual post-execution step
+2. Summary one_liner field is consistently empty — executor template should make it required
+3. Single-session milestones are achievable for 3-4 phase scopes — parallel wave execution is key enabler

@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A property management ERP for a real estate/construction company, built by Koncepto as closed software for a single client. Manages the full lifecycle of real estate developments: lots, sales, installment plans, cash movements, exchange rates, receipts, and internal communications. The system is feature-complete, tested, and delivery-ready with clean build gates and a polished lot grid visualization.
+A property management ERP for a real estate/construction company, built by Koncepto as closed software for a single client. Manages the full lifecycle of real estate developments: lots, sales, installment plans, cash movements, exchange rates, receipts, and internal communications. The system is feature-complete with polished UX, bulk operations, Google Maps integration, and comprehensive statistics dashboards.
 
 ## Core Value
 
@@ -41,21 +41,18 @@ The client can manage their entire real estate operation — from lot availabili
 - ✓ Lots grid redesign with manzana grouping, collapsible sections, and status-colored cards — v1.0
 - ✓ Lot detail panel with sale fields, mobile bottom Sheet, and print view — v1.0
 
+- ✓ Dialog spacing fixes for lot and message dialogs — v1.1
+- ✓ Lot status-reset bug fix (sold lots no longer reset to DISPONIBLE on edit) — v1.1
+- ✓ Estadisticas overhaul: filterable movements table, color-coded badges, proportional PARCIAL collection rate, help tooltips — v1.1
+- ✓ Google Maps URL field on developments with clickable external link — v1.1
+- ✓ Person detail page redesign with unified contact card, month-grouped payment history, professional tables — v1.1
+- ✓ Bulk lot editing with checkbox selection, floating actions bar, tag assignment, and status changes with safety guards — v1.1
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-## Current Milestone: v1.1 Bug Fixes & UX Polish
-
-**Goal:** Fix user-reported bugs, improve UX across Estadísticas, Desarrollos, Personas, and Mensajes modules.
-
-**Target features:**
-- Fix Movimientos Mensuales table clarity and Rendimientos de Cobranza logic
-- Fix dialog spacing in New Lot and Send Message popups
-- Fix disabled status Select sending null on lot edit
-- Add bulk lot editing capability
-- Add Google Maps location field for developments
-- Improve Person info display layout
+(No active milestone — ready for next milestone planning)
 
 ### Out of Scope
 
@@ -73,15 +70,15 @@ The client can manage their entire real estate operation — from lot availabili
 
 - **Client**: Single real estate/construction company
 - **Builder**: Koncepto (user's company)
-- **Codebase state**: Feature-complete and delivery-ready, ~69,500 LOC TypeScript/TSX, 51 tests passing
+- **Codebase state**: Feature-complete with polished UX, ~75,600 LOC TypeScript/TSX, 51 tests passing
 - **Stack**: Next.js 15 (App Router) + TypeScript + PostgreSQL + Prisma ORM + Auth.js v5
 - **UI**: shadcn/ui + Tailwind CSS 4 + Lucide icons + Radix Collapsible
 - **Dual currency**: All monetary operations support USD/ARS with daily exchange rate
 - **Architecture**: Server-first with Server Components/Actions, layered (presentation → actions → models → Prisma)
 - **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
 - **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
-- **Shipped**: v1.0 Delivery Hardening (2026-02-26)
-- **Current milestone**: v1.1 Bug Fixes & UX Polish
+- **Shipped**: v1.0 Delivery Hardening (2026-02-26), v1.1 Bug Fixes & UX Polish (2026-02-26)
+- **Current milestone**: None — ready for next milestone planning
 
 ## Constraints
 
@@ -105,6 +102,12 @@ The client can manage their entire real estate operation — from lot availabili
 | File-level eslint-disable for test files | Preferred over 40+ inline disables for Prisma mock any casts | ✓ Good |
 | Consolidate lot view modes to 2 (grid/table) | CONTEXT.md's compact grid with manzana grouping replaces 3-mode design | ✓ Good |
 | RESERVADO status = gray | Per client preference, not orange | ✓ Good |
+| Hidden input pattern for disabled Select | Always submit value via hidden input, not relying on disabled Select name | ✓ Good — v1.1 |
+| Per-type-per-month Map aggregation on server | Avoid sending raw movement rows to client | ✓ Good — v1.1 |
+| PARCIAL proportional credit | sum(paidAmount/amount) fraction rather than binary count | ✓ Good — v1.1 |
+| Google Maps as URL link, not iframe | Simple URL field, no API key management | ✓ Good — v1.1 |
+| Bulk operations with safety guards | 200-lot limit, sales guard rejects lots with active sales | ✓ Good — v1.1 |
+| Dialog for bulk tags, DropdownMenu for status | Tags need confirm, status is instant apply | ✓ Good — v1.1 |
 
 ---
-*Last updated: 2026-02-26 after v1.1 milestone start*
+*Last updated: 2026-02-26 after v1.1 milestone completion*
