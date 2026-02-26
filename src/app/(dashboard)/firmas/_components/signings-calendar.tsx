@@ -191,8 +191,8 @@ export function SigningsCalendar({
                   className="grid border-y-2 border-border/60"
                   style={gridStyle}
                 >
-                  <div className="p-1 text-[10px] font-medium text-muted-foreground/60 text-center border-r border-border uppercase">
-                    {segment.type === "break" ? segment.label || "Descanso" : ""}
+                  <div className="p-1 text-[10px] font-medium text-muted-foreground/60 text-center border-r border-border">
+                    {segment.label || "Descanso"} {segment.startTime}-{segment.endTime}
                   </div>
                   {weekDates.map((_, i) => (
                     <div
@@ -222,16 +222,16 @@ export function SigningsCalendar({
           {hasOutOfHours && (
             <>
               <div
-                className="grid border-y-2 border-dashed border-orange-300/60"
+                className="grid border-y-2 border-dashed border-amber-400/60"
                 style={gridStyle}
               >
-                <div className="p-1 text-[10px] font-medium text-orange-500/80 text-center border-r border-border">
-                  FUERA DE HORARIO
+                <div className="p-1 text-[10px] font-medium text-amber-600 text-center border-r border-border">
+                  Fuera de horario
                 </div>
                 {weekDates.map((_, i) => (
                   <div
                     key={i}
-                    className="p-1 border-r border-border last:border-r-0 bg-orange-50/30"
+                    className="p-1 border-r border-border last:border-r-0 bg-amber-50/50"
                   />
                 ))}
               </div>
@@ -288,12 +288,13 @@ function CalendarRow({
   outOfHours,
 }: CalendarRowProps) {
   return (
-    <div className="grid border-b border-border" style={gridStyle}>
+    <div className={cn("grid border-b border-border", outOfHours && "bg-amber-50/30 border-dashed")} style={gridStyle}>
       {/* Time label */}
       <div className={cn(
-        "p-2 text-xs font-medium text-right pr-3 border-r border-border flex items-center justify-end",
-        outOfHours ? "text-orange-500" : "text-muted-foreground"
+        "p-2 text-xs font-medium text-right pr-3 border-r border-border flex items-center justify-end gap-1",
+        outOfHours ? "text-amber-600" : "text-muted-foreground"
       )}>
+        {outOfHours && <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />}
         {time}
       </div>
 
@@ -309,7 +310,7 @@ function CalendarRow({
             className={cn(
               "min-h-[52px] p-1 border-r border-border last:border-r-0 transition-colors",
               isToday(date) && "bg-primary/5",
-              outOfHours && "bg-orange-50/20",
+              outOfHours && "bg-amber-50/30",
               signingsInSlot.length === 0 && canManage && !outOfHours && "hover:bg-muted/50 cursor-pointer"
             )}
             onClick={() => {
