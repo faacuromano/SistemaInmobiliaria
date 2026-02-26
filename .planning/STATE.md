@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Bug Fixes & UX Polish
 status: active
-last_updated: "2026-02-26"
+last_updated: "2026-02-26T15:33:33Z"
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 1
+  completed_plans: 1
 ---
 
 # Project State
@@ -23,18 +23,22 @@ See: .planning/PROJECT.md (updated 2026-02-26)
 ## Current Position
 
 Phase: 5 of 7 (Quick Fixes) — first phase of v1.1 milestone
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-02-26 — Roadmap created for v1.1
+Plan: 05-01 complete (1/1 plans done)
+Status: Phase 5 complete, ready for Phase 6
+Last activity: 2026-02-26 — Phase 5 Plan 01 executed
 
-Progress: [░░░░░░░░░░] 0% (0/3 v1.1 phases)
+Progress: [###░░░░░░░] 33% (1/3 v1.1 phases)
 
 ## Performance Metrics
 
-**Velocity (from v1.0):**
-- Total plans completed: 9
-- Average duration: 2.7min
-- Total execution time: 23.9min
+**Velocity:**
+- Total plans completed: 10
+- Average duration: 2.6min
+- Total execution time: 25.9min
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 05-quick-fixes | 01 | 2min | 2 | 2 |
 
 *Updated after each plan completion*
 
@@ -43,6 +47,9 @@ Progress: [░░░░░░░░░░] 0% (0/3 v1.1 phases)
 ### Decisions
 
 Key decisions from v1.0 are logged in PROJECT.md Key Decisions table.
+
+- [05-01] Used always-present hidden input for status instead of conditional rendering -- covers both enabled and disabled Select states
+- [05-01] Removed name prop from Select to avoid duplicate FormData entries -- hidden input is sole source of truth
 
 ### Pending Todos
 
@@ -56,5 +63,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Roadmap created for v1.1 milestone
+Stopped at: Completed 05-01-PLAN.md (Phase 5 Quick Fixes complete)
 Resume file: None

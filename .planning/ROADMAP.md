@@ -23,7 +23,7 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
 
 **Milestone Goal:** Fix user-reported bugs, improve UX across Estadisticas, Desarrollos, Personas, and Mensajes modules.
 
-- [ ] **Phase 5: Quick Fixes** - Dialog spacing, critical status bug, and message dialog padding
+- [x] **Phase 5: Quick Fixes** - Dialog spacing, critical status bug, and message dialog padding (completed 2026-02-26)
 - [ ] **Phase 6: Estadisticas Overhaul** - Movements table filtering, visual types, collection rate fix, and metric labels
 - [ ] **Phase 7: Features & Polish** - Bulk lot editing, Google Maps URL, and person layout improvement
 
@@ -38,7 +38,8 @@ Full details: `.planning/milestones/v1.0-ROADMAP.md`
   2. Send Message dialog displays fields with comfortable padding and margins — no cramped or overlapping elements
   3. Editing a sold lot and saving preserves the lot's current status (VENDIDO, CONTADO, etc.) instead of resetting to DISPONIBLE
   4. The disabled status Select field on sold lots does not send null to the server
-**Plans**: TBD
+**Plans**: 1 plan, 1 wave
+  - Plan 05-01 (wave 1): Fix dialog spacing (DEV-01, MSG-01) and lot status-reset bug (DEV-02)
 
 ### Phase 6: Estadisticas Overhaul
 **Goal**: Users can understand their financial performance from the statistics page with accurate data and clear explanations
@@ -73,6 +74,6 @@ Phases execute in numeric order: 5 -> 6 -> 7
 | 2. Financial Logic Tests | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 3. Integration Tests | v1.0 | 2/2 | Complete | 2026-02-26 |
 | 4. Delivery Gates and Lot Grid | v1.0 | 3/3 | Complete | 2026-02-26 |
-| 5. Quick Fixes | v1.1 | 0/? | Not started | - |
+| 5. Quick Fixes | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 6. Estadisticas Overhaul | v1.1 | 0/? | Not started | - |
 | 7. Features & Polish | v1.1 | 0/? | Not started | - |

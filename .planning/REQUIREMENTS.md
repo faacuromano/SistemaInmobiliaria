@@ -16,8 +16,8 @@ Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 
 ### Desarrollos
 
-- [ ] **DEV-01**: New Lot dialog has proper padding and margins for comfortable layout
-- [ ] **DEV-02**: Editing a sold lot preserves the current status instead of silently resetting to DISPONIBLE
+- [x] **DEV-01**: New Lot dialog has proper padding and margins for comfortable layout
+- [x] **DEV-02**: Editing a sold lot preserves the current status instead of silently resetting to DISPONIBLE
 - [ ] **DEV-03**: User can select multiple lots and edit shared fields (tags, status where applicable) in bulk
 - [ ] **DEV-04**: User can add a Google Maps URL to a development and click it to view the location
 
@@ -27,7 +27,7 @@ Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
 
 ### Mensajes
 
-- [ ] **MSG-01**: Send Message dialog has proper padding and margins for comfortable layout
+- [x] **MSG-01**: Send Message dialog has proper padding and margins for comfortable layout
 
 ## Future Requirements
 
@@ -63,12 +63,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | STAT-02 | Phase 6 | Pending |
 | STAT-03 | Phase 6 | Pending |
 | STAT-04 | Phase 6 | Pending |
-| DEV-01 | Phase 5 | Pending |
-| DEV-02 | Phase 5 | Pending |
+| DEV-01 | Phase 5 | Complete |
+| DEV-02 | Phase 5 | Complete |
 | DEV-03 | Phase 7 | Pending |
 | DEV-04 | Phase 7 | Pending |
 | PERS-01 | Phase 7 | Pending |
-| MSG-01 | Phase 5 | Pending |
+| MSG-01 | Phase 5 | Complete |
 
 **Coverage:**
 - v1.1 requirements: 10 total
