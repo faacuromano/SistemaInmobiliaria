@@ -1,0 +1,80 @@
+# Requirements: Sistema Inmobiliaria
+
+**Defined:** 2026-02-26
+**Core Value:** The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
+
+## v1.1 Requirements
+
+Requirements for Bug Fixes & UX Polish milestone. Each maps to roadmap phases.
+
+### Estadísticas
+
+- [ ] **STAT-01**: User can filter monthly movements table by movement type (CUOTA, SUELDO, etc.) to understand income/expense sources
+- [ ] **STAT-02**: User can see visual differentiation between movement types in the monthly table (color coding or icons)
+- [ ] **STAT-03**: User can see correct collection rate that accounts for PARCIAL payments proportionally
+- [ ] **STAT-04**: User can see clear labels and help text explaining what "Rendimientos de Cobranza" metrics mean
+
+### Desarrollos
+
+- [ ] **DEV-01**: New Lot dialog has proper padding and margins for comfortable layout
+- [ ] **DEV-02**: Editing a sold lot preserves the current status instead of silently resetting to DISPONIBLE
+- [ ] **DEV-03**: User can select multiple lots and edit shared fields (tags, status where applicable) in bulk
+- [ ] **DEV-04**: User can add a Google Maps URL to a development and click it to view the location
+
+### Personas
+
+- [ ] **PERS-01**: Person detail page displays information in a clearer, better-organized layout with improved table design
+
+### Mensajes
+
+- [ ] **MSG-01**: Send Message dialog has proper padding and margins for comfortable layout
+
+## Future Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### Estadísticas
+
+- **STAT-F01**: User can see year-over-year trend charts for collection performance
+- **STAT-F02**: User can export estadísticas data to CSV/PDF
+
+### Desarrollos
+
+- **DEV-F01**: User can edit lots directly from the grid detail panel (without switching to table view)
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Geographic/satellite map view | Client wants manzana grid, not a geographic map |
+| Real-time notifications for overdue installments | Out of scope for polish milestone |
+| Embedded Google Maps iframe | Simple URL link is sufficient — no API key management needed |
+| Bulk lot creation | Only bulk editing of existing lots is needed |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| STAT-01 | — | Pending |
+| STAT-02 | — | Pending |
+| STAT-03 | — | Pending |
+| STAT-04 | — | Pending |
+| DEV-01 | — | Pending |
+| DEV-02 | — | Pending |
+| DEV-03 | — | Pending |
+| DEV-04 | — | Pending |
+| PERS-01 | — | Pending |
+| MSG-01 | — | Pending |
+
+**Coverage:**
+- v1.1 requirements: 10 total
+- Mapped to phases: 0
+- Unmapped: 10 ⚠️
+
+---
+*Requirements defined: 2026-02-26*
+*Last updated: 2026-02-26 after initial definition*
