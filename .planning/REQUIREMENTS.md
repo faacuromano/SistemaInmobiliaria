@@ -29,9 +29,9 @@ Requirements for delivery release. Each maps to roadmap phases.
 
 ### Server Action Integration Tests
 
-- [ ] **ACT-01**: `sale.actions` create sale test — verifies lot status changes to VENDIDO and installments are generated
-- [ ] **ACT-02**: `sale.actions` cancel sale test — verifies lot status reverts to DISPONIBLE
-- [ ] **ACT-03**: `sale.actions` contado sale test — verifies zero installments and lot status CONTADO
+- [x] **ACT-01**: `sale.actions` create sale test — verifies lot status changes to VENDIDO and installments are generated
+- [x] **ACT-02**: `sale.actions` cancel sale test — verifies lot status reverts to DISPONIBLE
+- [x] **ACT-03**: `sale.actions` contado sale test — verifies zero installments and lot status CONTADO
 - [x] **ACT-04**: `payment.actions` payment recording test — verifies CashMovement created and installment marked PAGADA
 - [x] **ACT-05**: `payment.actions` payment with recalculation test — verifies recalculation triggered after refuerzo payment
 - [x] **ACT-06**: `payment.actions` partial failure test — verifies behavior when payment commits but recalculation fails
@@ -105,9 +105,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIN-07 | Phase 2 | Complete |
 | FIN-08 | Phase 2 | Complete |
 | FIN-09 | Phase 2 | Complete |
-| ACT-01 | Phase 3 | Pending |
-| ACT-02 | Phase 3 | Pending |
-| ACT-03 | Phase 3 | Pending |
+| ACT-01 | Phase 3 | Complete |
+| ACT-02 | Phase 3 | Complete |
+| ACT-03 | Phase 3 | Complete |
 | ACT-04 | Phase 3 | Complete |
 | ACT-05 | Phase 3 | Complete |
 | ACT-06 | Phase 3 | Complete |
