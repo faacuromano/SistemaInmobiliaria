@@ -166,3 +166,111 @@ describe('ACT-04: payInstallment -- CashMovement created and installment marked 
     })
   })
 })
+
+// ===========================================================================
+// ACT-05: payExtraCharge -- recalculation triggered after full payment
+// ===========================================================================
+
+describe('ACT-05: payExtraCharge -- recalculation triggered after full payment', () => {
+  it('calls recalculateInstallments with saleId and amount after fully-paid extra charge', async () => {
+    prismaMock.extraCharge.findUnique.mockResolvedValue(
+      buildMockExtraCharge({ amount: 5000, paidAmount: 0, status: 'PENDIENTE' }) as any
+    )
+    prismaMock.cashMovement.create.mockResolvedValue({ id: 'cm-1' } as any)
+    prismaMock.extraCharge.update.mockResolvedValue({} as any)
+
+    const result = await payExtraCharge(prevState, buildExtraChargePaymentFormData({ amount: '5000' }))
+
+    expect(result).toEqual({ success: true })
+
+    expect(vi.mocked(recalculateInstallments)).toHaveBeenCalledWith('sale-1', 5000)
+  })
+
+  it('does NOT call recalculateInstallments on partial payment (PARCIAL)', async () => {
+    prismaMock.extraCharge.findUnique.mockResolvedValue(
+      buildMockExtraCharge({ amount: 5000, paidAmount: 0, status: 'PENDIENTE' }) as any
+    )
+    prismaMock.cashMovement.create.mockResolvedValue({ id: 'cm-1' } as any)
+    prismaMock.extraCharge.update.mockResolvedValue({} as any)
+
+    const result = await payExtraCharge(
+      prevState,
+      buildExtraChargePaymentFormData({ amount: '2000' })
+    )
+
+    expect(result).toEqual({ success: true })
+
+    expect(prismaMock.extraCharge.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'PARCIAL' }),
+      })
+    )
+
+    expect(vi.mocked(recalculateInstallments)).not.toHaveBeenCalled()
+  })
+
+  it('calls recalculateInstallments when payment completes a partially-paid extra charge', async () => {
+    prismaMock.extraCharge.findUnique.mockResolvedValue(
+      buildMockExtraCharge({ amount: 5000, paidAmount: 3000, status: 'PARCIAL' }) as any
+    )
+    prismaMock.cashMovement.create.mockResolvedValue({ id: 'cm-1' } as any)
+    prismaMock.extraCharge.update.mockResolvedValue({} as any)
+
+    const result = await payExtraCharge(
+      prevState,
+      buildExtraChargePaymentFormData({ amount: '2000' })
+    )
+
+    expect(result).toEqual({ success: true })
+
+    // The amount arg is Number(extraCharge.amount) = the TOTAL charge amount, not the payment
+    expect(vi.mocked(recalculateInstallments)).toHaveBeenCalledWith('sale-1', 5000)
+  })
+})
+
+// ===========================================================================
+// ACT-06: payExtraCharge -- partial failure when recalculation throws
+// ===========================================================================
+
+describe('ACT-06: payExtraCharge -- partial failure when recalculation throws', () => {
+  it('returns error but payment data is committed when recalculation throws', async () => {
+    prismaMock.extraCharge.findUnique.mockResolvedValue(
+      buildMockExtraCharge({ amount: 5000, paidAmount: 0, status: 'PENDIENTE' }) as any
+    )
+    prismaMock.cashMovement.create.mockResolvedValue({ id: 'cm-1' } as any)
+    prismaMock.extraCharge.update.mockResolvedValue({} as any)
+
+    // Configure recalculateInstallments to throw AFTER transaction commits
+    vi.mocked(recalculateInstallments).mockRejectedValue(new Error('DB connection lost'))
+
+    const result = await payExtraCharge(
+      prevState,
+      buildExtraChargePaymentFormData({ amount: '5000' })
+    )
+
+    // The outer catch returns { success: false }
+    expect(result).toEqual({ success: false, error: 'Error al procesar el pago' })
+
+    // Proves the transaction DID execute -- cashMovement was created
+    expect(prismaMock.cashMovement.create).toHaveBeenCalledTimes(1)
+
+    // Proves the extra charge update was committed inside the transaction
+    expect(prismaMock.extraCharge.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: 'PAGADA' }),
+      })
+    )
+
+    // Proves the recalculation chain was wired even though it threw
+    expect(vi.mocked(recalculateInstallments)).toHaveBeenCalledWith('sale-1', 5000)
+  })
+
+  it('rejects payment with missing extraChargeId', async () => {
+    const result = await payExtraCharge(
+      prevState,
+      buildExtraChargePaymentFormData({ extraChargeId: '' })
+    )
+
+    expect(result).toEqual({ success: false, error: 'ID de cargo extra requerido' })
+  })
+})
