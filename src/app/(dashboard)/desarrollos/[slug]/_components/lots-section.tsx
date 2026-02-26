@@ -33,7 +33,13 @@ export type LotRow = {
   listPrice: number | null;
   status: LotStatus;
   notes: string | null;
-  sale: { id: string; person: { firstName: string; lastName: string } } | null;
+  sale: {
+    id: string;
+    saleDate: string;
+    currency: "USD" | "ARS";
+    totalPrice: number;
+    person: { firstName: string; lastName: string };
+  } | null;
   tags: TagInfo[];
 };
 
@@ -235,7 +241,7 @@ export function LotsSection({ lots, developmentId, canManage, canManageLots, all
         open={isMobile && !!selectedLot}
         onOpenChange={(open) => { if (!open) setSelectedLot(null); }}
       >
-        <SheetContent side="right" showCloseButton={false} aria-describedby={undefined} className="w-80 p-0">
+        <SheetContent side="bottom" showCloseButton={false} aria-describedby={undefined} className="h-[70vh] p-0 rounded-t-xl">
           <SheetTitle className="sr-only">Detalle del lote</SheetTitle>
           {selectedLot && (
             <LotDetailPanel
