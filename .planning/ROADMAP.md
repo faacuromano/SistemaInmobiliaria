@@ -56,7 +56,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. `sale.actions` test suite passes: a contado sale produces zero installments and sets lot status to CONTADO
   4. `payment.actions` test suite passes: recording a payment creates a CashMovement and marks the installment PAGADA
   5. `payment.actions` test suite passes: the partial-failure case (payment committed, recalculation throws) is tested and the expected behavior is asserted
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 03-01-PLAN.md — Test sale actions: createSale, cancelSale, contado (ACT-01, ACT-02, ACT-03)
+- [ ] 03-02-PLAN.md — Test payment actions: payInstallment, payExtraCharge with recalculation and partial-failure (ACT-04, ACT-05, ACT-06)
 
 ### Phase 4: Delivery Gates and Lot Grid
 **Goal**: The application passes all automated build and quality gates, and the lot grid presents a clean, client-ready manzana-grouped visualization with working detail panel
@@ -80,5 +82,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Testing Infrastructure | 2/2 | Complete | 2026-02-26 |
 | 2. Financial Logic Tests | 2/2 | Complete | 2026-02-26 |
-| 3. Integration Tests | 0/? | Not started | - |
+| 3. Integration Tests | 0/2 | Not started | - |
 | 4. Delivery Gates and Lot Grid | 0/? | Not started | - |
