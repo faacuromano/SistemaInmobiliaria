@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
+milestone: v1.0
 milestone_name: Bug Fixes & UX Polish
-status: active
-last_updated: "2026-02-26T15:33:33Z"
+status: unknown
+last_updated: "2026-02-26T15:37:58.503Z"
 progress:
-  total_phases: 3
-  completed_phases: 0
+  total_phases: 1
+  completed_phases: 1
   total_plans: 1
   completed_plans: 1
 ---
