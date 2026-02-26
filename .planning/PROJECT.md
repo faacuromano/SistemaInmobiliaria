@@ -45,7 +45,17 @@ The client can manage their entire real estate operation — from lot availabili
 
 <!-- Current scope. Building toward these. -->
 
-(No active requirements — start next milestone with `/gsd:new-milestone`)
+## Current Milestone: v1.1 Bug Fixes & UX Polish
+
+**Goal:** Fix user-reported bugs, improve UX across Estadísticas, Desarrollos, Personas, and Mensajes modules.
+
+**Target features:**
+- Fix Movimientos Mensuales table clarity and Rendimientos de Cobranza logic
+- Fix dialog spacing in New Lot and Send Message popups
+- Fix disabled status Select sending null on lot edit
+- Add bulk lot editing capability
+- Add Google Maps location field for developments
+- Improve Person info display layout
 
 ### Out of Scope
 
@@ -71,6 +81,7 @@ The client can manage their entire real estate operation — from lot availabili
 - **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
 - **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
 - **Shipped**: v1.0 Delivery Hardening (2026-02-26)
+- **Current milestone**: v1.1 Bug Fixes & UX Polish
 
 ## Constraints
 
@@ -96,4 +107,4 @@ The client can manage their entire real estate operation — from lot availabili
 | RESERVADO status = gray | Per client preference, not orange | ✓ Good |
 
 ---
-*Last updated: 2026-02-26 after v1.0 milestone*
+*Last updated: 2026-02-26 after v1.1 milestone start*
