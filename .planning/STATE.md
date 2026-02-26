@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: in-progress
-last_updated: "2026-02-26T08:16:07Z"
+status: complete
+last_updated: "2026-02-26T08:21:46Z"
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 9
-  completed_plans: 8
+  completed_plans: 9
 ---
 
 # Project State
@@ -18,23 +18,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-26)
 
 **Core value:** The client can manage their entire real estate operation — from lot availability through sale, installment collection, and cash tracking — in one system, with every transaction auditable and every peso accounted for.
-**Current focus:** Phase 4 — Delivery Gates and Lot Grid
+**Current focus:** All phases complete -- Milestone v1.0 delivered
 
 ## Current Position
 
 Phase: 4 of 4 (Delivery Gates and Lot Grid)
-Plan: 3 of 3 in current phase (04-01 and 04-02 complete, 04-03 remaining)
-Status: Phase 4 In Progress
-Last activity: 2026-02-26 — Completed 04-01 (Delivery gates: tsc, lint, build)
+Plan: 3 of 3 in current phase (all complete)
+Status: Milestone v1.0 Complete
+Last activity: 2026-02-26 — Completed 04-03 (Lot detail panel and print view)
 
-Progress: [█████████░] 89%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 2.7min
-- Total execution time: 21.5min
+- Total execution time: 23.9min
 
 **By Phase:**
 
@@ -43,10 +43,10 @@ Progress: [█████████░] 89%
 | 01-testing-infrastructure | 2 | 3min | 1.5min |
 | 02-financial-logic-tests | 2 | 4.5min | 2.25min |
 | 03-integration-tests | 2 | 6.5min | 3.25min |
-| 04-delivery-gates-and-lot-grid | 2/3 | 7.5min | 3.75min |
+| 04-delivery-gates-and-lot-grid | 3/3 | 9.9min | 3.3min |
 
 **Recent Trend:**
-- Last 5 plans: 2.25, 3.1, 3.4, 2.5, 5.0min
+- Last 5 plans: 3.1, 3.4, 2.5, 5.0, 2.4min
 - Trend: stable
 
 *Updated after each plan completion*
@@ -85,6 +85,9 @@ Recent decisions affecting current work:
 - 04-01: File-level eslint-disable for test files preferred over 40+ inline disables for Prisma mock any casts
 - 04-01: Number() wrapper for expectMoney args to handle Prisma Decimal union type narrowing
 - 04-01: Remove unused variables entirely rather than underscore-prefix (ESLint config lacks argsIgnorePattern)
+- 04-03: LotRow.sale.currency typed as 'USD' | 'ARS' union (not plain string) to match formatCurrency signature
+- 04-03: Radix data-state=closed override in globals.css as fallback for Tailwind print: classes on CollapsibleContent
+- 04-03: print-color-adjust: exact to preserve colored left borders in print output
 
 ### Pending Todos
 
@@ -100,5 +103,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 04-01-PLAN.md (Delivery gates: tsc, lint, build) -- Phase 4 plans 1 and 2 of 3 done, 04-03 remaining
+Stopped at: Completed 04-03-PLAN.md (Lot detail panel and print view) -- All 9 plans complete, milestone v1.0 delivered
 Resume file: None
