@@ -78,7 +78,7 @@ export async function payInstallment(
   if (!installment) {
     return { success: false, error: "Cuota no encontrada" };
   }
-  if (installment.status !== "PENDIENTE" && installment.status !== "PARCIAL") {
+  if (installment.status !== "PENDIENTE" && installment.status !== "PARCIAL" && installment.status !== "VENCIDA") {
     return { success: false, error: "La cuota ya fue pagada o no esta pendiente" };
   }
 
@@ -227,7 +227,7 @@ export async function payExtraCharge(
   if (!extraCharge) {
     return { success: false, error: "Cargo extra no encontrado" };
   }
-  if (extraCharge.status !== "PENDIENTE" && extraCharge.status !== "PARCIAL") {
+  if (extraCharge.status !== "PENDIENTE" && extraCharge.status !== "PARCIAL" && extraCharge.status !== "VENCIDA") {
     return { success: false, error: "El cargo extra ya fue pagado o no esta pendiente" };
   }
 

@@ -48,6 +48,11 @@ export async function getSaleById(id: string) {
     commissionAmount: sale.commissionAmount
       ? Number(sale.commissionAmount)
       : null,
+    lot: {
+      ...sale.lot,
+      area: sale.lot.area ? Number(sale.lot.area) : null,
+      listPrice: sale.lot.listPrice ? Number(sale.lot.listPrice) : null,
+    },
     installments: sale.installments.map((inst) => ({
       ...inst,
       amount: Number(inst.amount),
