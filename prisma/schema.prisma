@@ -331,6 +331,7 @@ model Sale {
   personId                 String     @map("person_id")
   sellerId                 String?    @map("seller_id")
   saleDate                 DateTime   @map("sale_date")
+  signingDate              DateTime?  @map("signing_date")
   totalPrice               Decimal    @db.Decimal(12, 2) @map("total_price")
   downPayment              Decimal?   @db.Decimal(12, 2) @map("down_payment")
   currency                 Currency   @default(USD)

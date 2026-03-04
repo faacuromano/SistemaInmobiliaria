@@ -46,7 +46,11 @@ export default async function NewSalePage() {
           firstName: p.firstName,
           lastName: p.lastName,
         }))}
-        sellers={sellers.map((s) => ({ id: s.id, name: `${s.name} ${s.lastName}`.trim() }))}
+        sellers={sellers.map((s) => ({
+          id: s.id,
+          name: `${s.name} ${s.lastName}`.trim(),
+          commissionRate: s.commissionRate ? Number(s.commissionRate) : null,
+        }))}
       />
     </div>
   );

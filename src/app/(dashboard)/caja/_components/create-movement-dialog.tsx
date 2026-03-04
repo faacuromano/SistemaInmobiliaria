@@ -61,13 +61,9 @@ export function CreateMovementDialog({
 }: Props) {
   const router = useRouter();
 
-  const [state, formAction, isPending] = useActionState<
-    ActionResult | null,
-    FormData
-  >(
-    (_prev, formData) =>
-      createCashMovement({ success: false, error: "" }, formData),
-    null
+  const [state, formAction, isPending] = useActionState(
+    createCashMovement,
+    null as ActionResult | null
   );
 
   const form = useForm<CashMovementCreateInput>({

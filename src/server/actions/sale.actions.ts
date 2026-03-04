@@ -7,7 +7,9 @@ import { saleModel } from "@/server/models/sale.model";
 import { saleCreateSchema } from "@/schemas/sale.schema";
 import { generateInstallments } from "@/lib/installment-generator";
 import { logAction } from "@/server/actions/audit-log.actions";
+import { systemConfigModel } from "@/server/models/system-config.model";
 import type { ActionResult } from "@/types/actions";
+import { Prisma } from "@/generated/prisma/client/client";
 import type { SaleStatus, LotStatus } from "@/generated/prisma/client/client";
 
 export async function getSales(params?: {
@@ -86,7 +88,7 @@ function getLotStatusForSale(
 export async function createSale(
   _prevState: ActionResult,
   formData: FormData
-): Promise<ActionResult> {
+): Promise<ActionResult<{ saleId: string }>> {
   const session = await requirePermission("sales:manage");
 
   const raw = {
@@ -104,8 +106,10 @@ export async function createSale(
     collectionDay: formData.get("collectionDay") ?? undefined,
     commissionAmount: formData.get("commissionAmount") ?? undefined,
     status: formData.get("status"),
+    signingDate: formData.get("signingDate") ?? undefined,
     notes: formData.get("notes") ?? undefined,
     paymentWindow: formData.get("paymentWindow") ?? undefined,
+    extraCharges: formData.get("extraCharges") as string ?? undefined,
   };
 
   const parsed = saleCreateSchema.safeParse(raw);
@@ -164,10 +168,11 @@ export async function createSale(
       return { success: false, error: "El día de cobro es requerido" };
     }
 
-    // Auto-calculate installment amount
-    const financedAmount = data.totalPrice - (data.downPayment || 0);
+    // Auto-calculate installment amount (discount planned extra charges)
+    const totalExtraCharges = (data.extraCharges ?? []).reduce((sum, ec) => sum + ec.amount, 0);
+    const financedAmount = data.totalPrice - (data.downPayment || 0) - totalExtraCharges;
     if (financedAmount <= 0) {
-      return { success: false, error: "La entrega cubre el total del precio. No hay monto a financiar." };
+      return { success: false, error: "La entrega y refuerzos cubren el total del precio. No hay monto a financiar en cuotas." };
     }
 
     if (data.firstInstallmentAmount && data.totalInstallments > 1) {
@@ -191,10 +196,11 @@ export async function createSale(
     return { success: false, error: "Ventas al contado o cesión no pueden tener cuotas" };
   }
 
+  let saleId: string;
   try {
     const lotStatus = getLotStatusForSale(data.status);
 
-    const saleId = await prisma.$transaction(async (tx) => {
+    saleId = await prisma.$transaction(async (tx) => {
       // 1. Create sale
       const sale = await tx.sale.create({
         data: {
@@ -202,6 +208,7 @@ export async function createSale(
           personId: data.personId,
           sellerId: data.sellerId || null,
           saleDate: new Date(data.saleDate),
+          signingDate: data.signingDate ? new Date(data.signingDate) : null,
           totalPrice: data.totalPrice,
           downPayment: data.downPayment ?? null,
           currency: data.currency,
@@ -233,7 +240,25 @@ export async function createSale(
         await tx.installment.createMany({ data: installments });
       }
 
-      // 3. Update lot status
+      // 3. Create extra charges (refuerzos) if any
+      if (data.status === "ACTIVA" && data.extraCharges && data.extraCharges.length > 0) {
+        await tx.extraCharge.createMany({
+          data: data.extraCharges.map((ec) => ({
+            saleId: sale.id,
+            description: ec.description,
+            amount: ec.amount,
+            currency: data.currency,
+            dueDate: new Date(ec.dueDate),
+            status: "PENDIENTE" as const,
+            paidAmount: 0,
+            isInKind: false,
+            notes: ec.notes || null,
+            createdById: session.user.id,
+          })),
+        });
+      }
+
+      // 4. Update lot status
       await tx.lot.update({
         where: { id: data.lotId },
         data: { status: lotStatus },
@@ -245,13 +270,32 @@ export async function createSale(
     await logAction("Sale", saleId, "CREATE", {
       newData: { lotId: data.lotId, personId: data.personId, totalPrice: data.totalPrice, status: data.status, currency: data.currency },
     }, session.user.id);
-  } catch {
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return { success: false, error: "Ya existe una venta registrada para este lote. Si fue cancelada, debe eliminarse primero." };
+      }
+      if (error.code === "P2003") {
+        return { success: false, error: "Referencia invalida: verifique que el lote, persona y vendedor existan." };
+      }
+    }
+    console.error("Error al crear venta:", error);
     return { success: false, error: "Error al crear la venta" };
   }
 
   revalidatePath("/ventas");
   revalidatePath("/desarrollos");
-  return { success: true };
+  return { success: true, data: { saleId } };
+}
+
+export async function getSaleForPrint(id: string) {
+  await requirePermission("sales:view");
+  const [sale, companyName] = await Promise.all([
+    getSaleById(id),
+    systemConfigModel.get("company_name"),
+  ]);
+  if (!sale) return null;
+  return { ...sale, companyName: companyName ?? "Sistema Inmobiliaria" };
 }
 
 export async function cancelSale(id: string): Promise<ActionResult> {

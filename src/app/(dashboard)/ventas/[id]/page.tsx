@@ -19,6 +19,7 @@ import { InstallmentsTable } from "./_components/installments-table";
 import { SaleActions } from "./_components/sale-actions";
 import { SaleMovements } from "./_components/sale-movements";
 import { ReceiptsSection } from "./_components/receipts-section";
+import { SalePrintButton } from "./_components/sale-print-button";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -55,6 +56,7 @@ export default async function SaleDetailPage({ params }: Props) {
             label={SALE_STATUS_LABELS[sale.status as SaleStatus]}
             variant={SALE_STATUS_COLORS[sale.status as SaleStatus]}
           />
+          <SalePrintButton saleId={sale.id} />
           <Button asChild variant="outline" size="sm">
             <Link href="/ventas">
               <ArrowLeft className="mr-2 h-4 w-4" />

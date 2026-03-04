@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState, useMemo, useRef } from "react";
+import { useActionState, useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -15,6 +15,8 @@ import type { ActionResult } from "@/types/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -31,6 +33,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { CreatePersonDialog } from "./create-person-dialog";
+import { SaleSuccessDialog } from "./sale-success-dialog";
 
 // Only these statuses are valid for creation
 const CREATION_STATUSES: Record<string, string> = {
@@ -49,7 +54,7 @@ interface Props {
     status: string;
   }>;
   persons: Array<{ id: string; firstName: string; lastName: string }>;
-  sellers: Array<{ id: string; name: string }>;
+  sellers: Array<{ id: string; name: string; commissionRate: number | null }>;
 }
 
 function getTodayString(): string {
@@ -58,6 +63,11 @@ function getTodayString(): string {
   const month = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatDateDisplay(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-");
+  return `${day}/${month}/${year}`;
 }
 
 function getCurrentMonthString(): string {
@@ -84,11 +94,12 @@ function getSmartFirstMonth(collectionDay: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
-export function SaleForm({ developments, lots, persons, sellers }: Props) {
+export function SaleForm({ developments, lots, persons: initialPersons, sellers }: Props) {
   const router = useRouter();
+  const todayString = useRef(getTodayString()).current;
 
   const [state, formAction, isPending] = useActionState<
-    ActionResult | null,
+    ActionResult<{ saleId: string }> | null,
     FormData
   >(
     (_prev, formData) => createSale({ success: false, error: "" }, formData),
@@ -101,7 +112,7 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
       lotId: "",
       personId: "",
       sellerId: "",
-      saleDate: getTodayString(),
+      saleDate: todayString,
       totalPrice: "",
       downPayment: "",
       currency: Currency.USD,
@@ -122,6 +133,43 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
   // Development selection is local state, not a form field
   const [selectedDevelopmentId, setSelectedDevelopmentId] = useState("");
 
+  // Persons list can grow when creating inline
+  const [personsList, setPersonsList] = useState(initialPersons);
+
+  // Commission mode: false = auto from seller rate, true = manual override
+  const [customCommission, setCustomCommission] = useState(false);
+
+  // Signing date managed as local state (not in react-hook-form since it's a new field)
+  const [signingDate, setSigningDate] = useState("");
+
+  // Sale ID after successful creation (shows success dialog)
+  const [successSaleId, setSuccessSaleId] = useState<string | null>(null);
+
+  // Extra charges (refuerzos) managed as local state, serialized to hidden input
+  const [extraCharges, setExtraCharges] = useState<
+    Array<{ description: string; amount: string; dueDate: string; notes: string }>
+  >([]);
+
+  const addExtraCharge = useCallback(() => {
+    setExtraCharges((prev) => [
+      ...prev,
+      { description: "", amount: "", dueDate: "", notes: "" },
+    ]);
+  }, []);
+
+  const removeExtraCharge = useCallback((index: number) => {
+    setExtraCharges((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateExtraCharge = useCallback(
+    (index: number, field: string, value: string) => {
+      setExtraCharges((prev) =>
+        prev.map((ec, i) => (i === index ? { ...ec, [field]: value } : ec))
+      );
+    },
+    []
+  );
+
   // Filter lots by selected development
   const filteredLots = useMemo(
     () =>
@@ -140,6 +188,7 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
   const watchedFirstMonth = form.watch("firstInstallmentMonth");
   const watchedCollectionDay = form.watch("collectionDay");
   const watchedCurrency = form.watch("currency");
+  const watchedSellerId = form.watch("sellerId");
 
   // Auto-update firstInstallmentMonth when collectionDay changes
   useEffect(() => {
@@ -149,8 +198,50 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
     }
   }, [watchedCollectionDay, form]);
 
+  // Auto-calculate commission from seller rate
+  const selectedSeller = useMemo(
+    () => sellers.find((s) => s.id === watchedSellerId),
+    [sellers, watchedSellerId]
+  );
+
+  const autoCommissionAmount = useMemo(() => {
+    if (!selectedSeller?.commissionRate) return null;
+    const price = parseFloat(watchedTotalPrice || "0");
+    if (price <= 0) return null;
+    return Math.round((selectedSeller.commissionRate / 100) * price * 100) / 100;
+  }, [selectedSeller, watchedTotalPrice]);
+
+  // When seller changes, reset commission mode and update amount
+  useEffect(() => {
+    if (!watchedSellerId) {
+      setCustomCommission(false);
+      form.setValue("commissionAmount", "");
+      return;
+    }
+    const seller = sellers.find((s) => s.id === watchedSellerId);
+    if (!seller?.commissionRate) {
+      // No default rate, enable manual entry
+      setCustomCommission(true);
+    } else {
+      setCustomCommission(false);
+    }
+  }, [watchedSellerId, sellers, form]);
+
+  // Auto-fill commission amount when not in custom mode
+  useEffect(() => {
+    if (!customCommission && autoCommissionAmount !== null) {
+      form.setValue("commissionAmount", String(autoCommissionAmount));
+    }
+  }, [customCommission, autoCommissionAmount, form]);
+
   const showInstallmentSection =
     watchedStatus === SaleStatus.ACTIVA;
+
+  // Total de refuerzos pactados (reduce el monto a financiar en cuotas)
+  const totalExtraCharges = useMemo(
+    () => extraCharges.reduce((sum, ec) => sum + (parseFloat(ec.amount) || 0), 0),
+    [extraCharges]
+  );
 
   // Auto-calculated installment amount
   const autoCalculated = useMemo(() => {
@@ -159,7 +250,7 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
     const installments = parseInt(watchedTotalInstallments || "0", 10);
     const firstAmount = parseFloat(watchedFirstInstallmentAmount || "0") || 0;
 
-    const toFinance = Math.max(price - down, 0);
+    const toFinance = Math.max(price - down - totalExtraCharges, 0);
 
     let perInstallment = 0;
     let firstInstallment = 0;
@@ -179,13 +270,14 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
     return {
       totalPrice: price,
       downPayment: down,
+      totalExtraCharges,
       toFinance,
       perInstallment,
       firstInstallment,
       hasCustomFirst,
       totalInstallments: installments,
     };
-  }, [watchedTotalPrice, watchedDownPayment, watchedTotalInstallments, watchedFirstInstallmentAmount]);
+  }, [watchedTotalPrice, watchedDownPayment, watchedTotalInstallments, watchedFirstInstallmentAmount, totalExtraCharges]);
 
   // Calculate installment preview
   const installmentPreview = useMemo(() => {
@@ -218,11 +310,10 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
   // Handle action result
   useEffect(() => {
     if (!state) return;
-    if (state.success) {
+    if (state.success && state.data?.saleId) {
       toast.success("Venta creada exitosamente");
-      router.push("/ventas");
-      router.refresh();
-    } else {
+      setSuccessSaleId(state.data.saleId);
+    } else if (!state.success) {
       toast.error(state.error);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -234,15 +325,33 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
     form.setValue("lotId", "");
   }
 
+  // Handle inline person creation
+  const handlePersonCreated = useCallback(
+    (person: { id: string; firstName: string; lastName: string }) => {
+      setPersonsList((prev) => [...prev, person]);
+      form.setValue("personId", person.id);
+    },
+    [form]
+  );
+
   const currencyCode = (watchedCurrency as "USD" | "ARS") || "USD";
 
   return (
+    <>
     <Form {...form}>
       <form action={formAction} className="space-y-6">
+        {/* Hidden auto-set fields */}
+        <input type="hidden" name="saleDate" value={todayString} />
+        <input type="hidden" name="signingDate" value={signingDate} />
+        <input type="hidden" name="extraCharges" value={JSON.stringify(extraCharges)} />
+
         {/* Section 1: Lote */}
         <Card>
           <CardHeader>
             <CardTitle>Lote</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Selecciona el desarrollo y el lote a vender
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -310,34 +419,41 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
             <CardTitle>Comprador</CardTitle>
           </CardHeader>
           <CardContent>
-            <FormField
-              control={form.control}
-              name="personId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Persona</FormLabel>
-                  <Select
-                    name="personId"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar comprador" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {persons.map((person) => (
-                        <SelectItem key={person.id} value={person.id}>
-                          {person.firstName} {person.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <FormField
+                  control={form.control}
+                  name="personId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cliente</FormLabel>
+                      <Select
+                        name="personId"
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar comprador" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {personsList.map((person) => (
+                            <SelectItem key={person.id} value={person.id}>
+                              {person.firstName} {person.lastName}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="pt-7">
+                <CreatePersonDialog onCreated={handlePersonCreated} />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -345,23 +461,13 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
         <Card>
           <CardHeader>
             <CardTitle>Detalles de Venta</CardTitle>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <CalendarDays className="h-4 w-4" />
+              <span>Fecha de venta: {formatDateDisplay(todayString)}</span>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="saleDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha de Venta</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 control={form.control}
                 name="status"
@@ -392,6 +498,16 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <Label htmlFor="signingDate">Fecha de Firma</Label>
+                <Input
+                  id="signingDate"
+                  type="date"
+                  value={signingDate}
+                  onChange={(e) => setSigningDate(e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -494,11 +610,107 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
           </CardContent>
         </Card>
 
-        {/* Section 4: Plan (only for ACTIVA) */}
+        {/* Section 4: Vendedor y Comision */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Vendedor y Comision</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+              control={form.control}
+              name="sellerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Vendedor (opcional)</FormLabel>
+                  <Select
+                    name="sellerId"
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sin vendedor" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sellers.map((seller) => (
+                        <SelectItem key={seller.id} value={seller.id}>
+                          {seller.name}
+                          {seller.commissionRate
+                            ? ` (${seller.commissionRate}%)`
+                            : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {watchedSellerId && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="customCommission"
+                    checked={customCommission}
+                    onCheckedChange={(checked) => {
+                      setCustomCommission(checked);
+                      if (!checked && autoCommissionAmount !== null) {
+                        form.setValue("commissionAmount", String(autoCommissionAmount));
+                      }
+                    }}
+                  />
+                  <Label htmlFor="customCommission" className="text-sm">
+                    Comision especifica
+                  </Label>
+                  {!customCommission && selectedSeller?.commissionRate && (
+                    <span className="text-xs text-muted-foreground">
+                      ({selectedSeller.commissionRate}% del precio total)
+                    </span>
+                  )}
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="commissionAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Monto Comision ({currencyCode})
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          {...field}
+                          disabled={!customCommission && autoCommissionAmount !== null}
+                          className={
+                            !customCommission && autoCommissionAmount !== null
+                              ? "bg-muted"
+                              : ""
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Section 5: Plan de Cuotas (only for ACTIVA) */}
         {showInstallmentSection && (
           <Card>
             <CardHeader>
-              <CardTitle>Plan</CardTitle>
+              <CardTitle>Plan de Cuotas</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Configura el plan de pagos en cuotas
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -560,7 +772,7 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
 
                   {/* Financing breakdown */}
                   {autoCalculated.totalPrice > 0 && (
-                    <div className="rounded-sm border p-4 bg-muted/50">
+                    <div className="rounded-md border p-4 bg-muted/50">
                       <div className="space-y-1 font-mono text-sm">
                         <div className="flex justify-between">
                           <span>Precio Total:</span>
@@ -572,16 +784,22 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
                             <span>-{formatCurrency(autoCalculated.downPayment, currencyCode)}</span>
                           </div>
                         )}
+                        {autoCalculated.totalExtraCharges > 0 && (
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Refuerzos pactados:</span>
+                            <span>-{formatCurrency(autoCalculated.totalExtraCharges, currencyCode)}</span>
+                          </div>
+                        )}
                         <div className="border-t my-1" />
                         <div className={`flex justify-between font-semibold ${
-                          autoCalculated.downPayment > autoCalculated.totalPrice
+                          autoCalculated.toFinance <= 0 && autoCalculated.totalPrice > 0
                             ? "text-destructive"
                             : ""
                         }`}>
-                          <span>A Financiar:</span>
+                          <span>A Financiar en cuotas:</span>
                           <span>
-                            {autoCalculated.downPayment > autoCalculated.totalPrice
-                              ? "Entrega excede el precio"
+                            {autoCalculated.toFinance <= 0 && autoCalculated.totalPrice > 0
+                              ? "Entrega + refuerzos cubren el total"
                               : formatCurrency(autoCalculated.toFinance, currencyCode)}
                           </span>
                         </div>
@@ -652,7 +870,7 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
 
                   {/* Installment Preview */}
                   {installmentPreview.length > 0 && (
-                    <div className="rounded-sm border p-4">
+                    <div className="rounded-md border p-4">
                       <h4 className="mb-3 text-sm font-medium">
                         Vista previa de cuotas
                       </h4>
@@ -709,71 +927,111 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
           </Card>
         )}
 
-        {/* Hidden field for totalInstallments when section is hidden (CONTADO/CESION) */}
-        {!showInstallmentSection && (
-          <input type="hidden" name="totalInstallments" value="0" />
-        )}
-
-        {/* Section 5: Vendedor y Comision */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendedor y Comision</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="sellerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Vendedor (opcional)</FormLabel>
-                    <Select
-                      name="sellerId"
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
+        {/* Section 6: Refuerzos (optional, only for ACTIVA sales) */}
+        {showInstallmentSection && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Refuerzos (opcional)</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Cuotas de refuerzo pactadas al momento de la firma
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {extraCharges.map((ec, index) => (
+                <div
+                  key={index}
+                  className="space-y-3 rounded-md border p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">
+                      Refuerzo {index + 1}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => removeExtraCharge(index)}
                     >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sin vendedor" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {sellers.map((seller) => (
-                          <SelectItem key={seller.id} value={seller.id}>
-                            {seller.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="commissionAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Monto Comision (opcional)</FormLabel>
-                    <FormControl>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Descripcion</label>
+                      <Input
+                        placeholder="Ej: Refuerzo escrituracion"
+                        value={ec.description}
+                        onChange={(e) =>
+                          updateExtraCharge(index, "description", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">
+                        Monto ({currencyCode})
+                      </label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        {...field}
+                        value={ec.amount}
+                        onChange={(e) =>
+                          updateExtraCharge(index, "amount", e.target.value)
+                        }
                       />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </CardContent>
-        </Card>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">
+                        Fecha de vencimiento
+                      </label>
+                      <Input
+                        type="date"
+                        value={ec.dueDate}
+                        onChange={(e) =>
+                          updateExtraCharge(index, "dueDate", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
 
-        {/* Section 6: Notas */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addExtraCharge}
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Agregar Refuerzo
+              </Button>
+
+              {extraCharges.length > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Total refuerzos:{" "}
+                  {formatCurrency(
+                    extraCharges.reduce(
+                      (sum, ec) => sum + (parseFloat(ec.amount) || 0),
+                      0
+                    ),
+                    currencyCode
+                  )}{" "}
+                  ({extraCharges.length} programado
+                  {extraCharges.length !== 1 ? "s" : ""})
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Hidden field for totalInstallments when section is hidden (CONTADO/CESION) */}
+        {!showInstallmentSection && (
+          <input type="hidden" name="totalInstallments" value="0" />
+        )}
+
+        {/* Section 7: Notas */}
         <Card>
           <CardHeader>
             <CardTitle>Notas</CardTitle>
@@ -813,5 +1071,16 @@ export function SaleForm({ developments, lots, persons, sellers }: Props) {
         </div>
       </form>
     </Form>
+
+    <SaleSuccessDialog
+      saleId={successSaleId}
+      open={!!successSaleId}
+      onClose={() => {
+        setSuccessSaleId(null);
+        router.push("/ventas");
+        router.refresh();
+      }}
+    />
+    </>
   );
 }

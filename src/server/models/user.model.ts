@@ -153,6 +153,7 @@ export const userModel = {
         id: true,
         name: true,
         lastName: true,
+        commissionRate: true,
       },
       orderBy: { name: "asc" },
     });

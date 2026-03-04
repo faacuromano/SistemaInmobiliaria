@@ -38,6 +38,10 @@ export default async function DashboardPage() {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const threeDaysFromNow = new Date(today);
   threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+  const sevenDaysFromNow = new Date(today);
+  sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+  const thirtyDaysFromNow = new Date(today);
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
   // ── KPI queries ─────────────────────────────────────────────
   const [
@@ -49,6 +53,8 @@ export default async function DashboardPage() {
     overdueInstallments,
     upcomingSignings,
     urgentSigningsCount,
+    upcomingExtraCharges,
+    urgentExtraChargesCount,
   ] = await Promise.all([
     prisma.sale.count({ where: { status: "ACTIVA" } }),
 
@@ -139,6 +145,45 @@ export default async function DashboardPage() {
       where: {
         date: { gte: today, lte: threeDaysFromNow },
         status: { notIn: ["CANCELADA", "COMPLETADA"] },
+      },
+    }),
+
+    // ── Upcoming extra charges (refuerzos within 30 days) ──
+    prisma.extraCharge.findMany({
+      where: {
+        status: "PENDIENTE",
+        dueDate: { gte: today, lte: thirtyDaysFromNow },
+      },
+      take: 10,
+      orderBy: { dueDate: "asc" },
+      select: {
+        id: true,
+        description: true,
+        amount: true,
+        currency: true,
+        dueDate: true,
+        sale: {
+          select: {
+            id: true,
+            lot: {
+              select: {
+                lotNumber: true,
+                development: { select: { name: true } },
+              },
+            },
+            person: {
+              select: { firstName: true, lastName: true },
+            },
+          },
+        },
+      },
+    }),
+
+    // ── Urgent extra charges (within 7 days) ───────────────
+    prisma.extraCharge.count({
+      where: {
+        status: "PENDIENTE",
+        dueDate: { gte: today, lte: sevenDaysFromNow },
       },
     }),
   ]);
@@ -400,6 +445,103 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Upcoming Extra Charges (Refuerzos) ─────────── */}
+      {upcomingExtraCharges.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-lg font-semibold">
+                <DollarSign className="h-5 w-5 text-muted-foreground" />
+                Refuerzos Proximos
+              </CardTitle>
+              {urgentExtraChargesCount > 0 && (
+                <span className="flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {urgentExtraChargesCount} en 7 dias
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-muted/30 text-left text-muted-foreground">
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Descripcion</th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Comprador</th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Lote</th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Monto</th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Vencimiento</th>
+                    <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider">Dias</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingExtraCharges.map((charge) => {
+                    const days = daysUntil(charge.dueDate);
+                    const isUrgent = days <= 7;
+                    return (
+                      <tr
+                        key={charge.id}
+                        className={`border-b last:border-0 hover:bg-accent/40 transition-colors ${
+                          isUrgent
+                            ? "bg-amber-50/50 dark:bg-amber-950/20"
+                            : ""
+                        }`}
+                      >
+                        <td className="px-3 py-2">
+                          <Link
+                            href={`/ventas/${charge.sale.id}`}
+                            className="font-medium hover:underline"
+                          >
+                            {charge.description}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2">
+                          {charge.sale.person.firstName}{" "}
+                          {charge.sale.person.lastName}
+                        </td>
+                        <td className="px-3 py-2">
+                          {charge.sale.lot.development.name} - Lote{" "}
+                          {charge.sale.lot.lotNumber}
+                        </td>
+                        <td className="px-3 py-2">
+                          {formatCurrency(
+                            Number(charge.amount),
+                            charge.currency as "USD" | "ARS"
+                          )}
+                        </td>
+                        <td
+                          className={`px-3 py-2 ${
+                            isUrgent
+                              ? "font-medium text-amber-600 dark:text-amber-400"
+                              : ""
+                          }`}
+                        >
+                          {formatDate(charge.dueDate)}
+                        </td>
+                        <td
+                          className={`px-3 py-2 ${
+                            isUrgent
+                              ? "font-semibold text-amber-600 dark:text-amber-400"
+                              : ""
+                          }`}
+                        >
+                          {days === 0
+                            ? "Hoy"
+                            : days === 1
+                              ? "Manana"
+                              : `${days} dias`}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Overdue Installments (full width) ────────────── */}
       <Card>

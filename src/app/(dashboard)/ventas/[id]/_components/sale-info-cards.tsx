@@ -21,6 +21,7 @@ interface SaleDetail {
   personId: string;
   sellerId: string | null;
   saleDate: Date;
+  signingDate: Date | null;
   totalPrice: number;
   downPayment: number | null;
   currency: string;
@@ -175,6 +176,12 @@ export function SaleInfoCards({ sale }: SaleInfoCardsProps) {
             <p className="text-sm text-muted-foreground">Fecha de Venta</p>
             <p className="font-medium">{formatDate(sale.saleDate)}</p>
           </div>
+          {sale.signingDate && (
+            <div>
+              <p className="text-sm text-muted-foreground">Fecha de Firma</p>
+              <p className="font-medium">{formatDate(sale.signingDate)}</p>
+            </div>
+          )}
           <div>
             <p className="text-sm text-muted-foreground">Cuotas</p>
             <p className="font-medium">

@@ -115,7 +115,7 @@ export async function getCashMovementsSummary(params?: {
  * Create a general cash movement (non-payment types like SUELDO, GASTO_OFICINA, etc.)
  */
 export async function createCashMovement(
-  _prevState: ActionResult,
+  _prevState: ActionResult | null,
   formData: FormData
 ): Promise<ActionResult> {
   const session = await requirePermission("cash:manage");
@@ -154,9 +154,9 @@ export async function createCashMovement(
       type: data.type,
       concept: data.concept,
       detail: data.detail || null,
-      developmentId: data.developmentId || null,
-      personId: data.personId || null,
-      saleId: data.saleId || null,
+      developmentId: data.developmentId && data.developmentId !== "none" ? data.developmentId : null,
+      personId: data.personId && data.personId !== "none" ? data.personId : null,
+      saleId: data.saleId && data.saleId !== "none" ? data.saleId : null,
       installmentId: data.installmentId || null,
       extraChargeId: data.extraChargeId || null,
       arsIncome: data.arsIncome ?? null,

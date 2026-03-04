@@ -44,8 +44,40 @@ export const saleCreateSchema = z.object({
     .or(z.literal(""))
     .transform((v) => (v ? parseFloat(v) : undefined)),
   status: z.nativeEnum(SaleStatus).default(SaleStatus.ACTIVA),
+  signingDate: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
   paymentWindow: z.string().optional().or(z.literal("")),
+  extraCharges: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => {
+      if (!v) return [];
+      try {
+        return JSON.parse(v) as Array<{
+          description: string;
+          amount: string;
+          dueDate: string;
+          notes?: string;
+        }>;
+      } catch {
+        return [];
+      }
+    })
+    .pipe(
+      z.array(
+        z.object({
+          description: z.string().min(1, "La descripcion es requerida"),
+          amount: z
+            .string()
+            .min(1)
+            .transform((v) => parseFloat(v))
+            .pipe(z.number().positive("El monto debe ser mayor a 0")),
+          dueDate: z.string().min(1, "La fecha es requerida"),
+          notes: z.string().optional().or(z.literal("")),
+        })
+      )
+    ),
 });
 
 export type SaleCreateInput = z.input<typeof saleCreateSchema>;

@@ -81,6 +81,56 @@ export async function createPerson(
   return { success: true };
 }
 
+export async function createPersonQuick(
+  _prevState: ActionResult<{ id: string; firstName: string; lastName: string }>,
+  formData: FormData
+): Promise<ActionResult<{ id: string; firstName: string; lastName: string }>> {
+  const session = await requirePermission("persons:manage");
+
+  const firstName = (formData.get("firstName") as string)?.trim();
+  const lastName = (formData.get("lastName") as string)?.trim();
+  const dni = (formData.get("dni") as string)?.trim() || null;
+  const phone = (formData.get("phone") as string)?.trim() || null;
+  const email = (formData.get("email") as string)?.trim() || null;
+
+  if (!firstName || !lastName) {
+    return { success: false, error: "Nombre y apellido son requeridos" };
+  }
+
+  try {
+    const person = await personModel.create({
+      type: "CLIENTE",
+      firstName,
+      lastName,
+      dni,
+      cuit: null,
+      email,
+      phone,
+      phone2: null,
+      address: null,
+      city: null,
+      province: null,
+      notes: null,
+      createdById: session.user.id,
+    });
+
+    await logAction("Person", person.id, "CREATE", {
+      newData: { type: "CLIENTE", firstName, lastName },
+    }, session.user.id);
+
+    revalidatePath("/personas");
+    return {
+      success: true,
+      data: { id: person.id, firstName, lastName },
+    };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return { success: false, error: "Ya existe una persona con ese DNI" };
+    }
+    return { success: false, error: "Error al crear la persona" };
+  }
+}
+
 export async function updatePerson(
   _prevState: ActionResult,
   formData: FormData
