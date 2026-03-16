@@ -36,6 +36,7 @@ import { Price } from "@/components/shared/price";
 import { Currency } from "@/types/enums";
 import { payInstallment } from "@/server/actions/payment.actions";
 import type { ActionResult } from "@/types/actions";
+import { CurrencyEquivalence } from "./currency-equivalence";
 
 const paymentFormSchema = z.object({
   amount: z
@@ -222,6 +223,25 @@ export function PayInstallmentDialog({
                   )}
                 />
               </div>
+
+              {/* Currency equivalence */}
+              {(() => {
+                const watchedAmount = parseFloat(form.watch("amount") || "0") || 0;
+                const watchedCurrency = form.watch("currency") as "USD" | "ARS";
+                const watchedManualRate = form.watch("manualRate");
+                const parsedManualRate = watchedManualRate ? parseFloat(watchedManualRate) : undefined;
+                const validManualRate = parsedManualRate && parsedManualRate > 0 ? parsedManualRate : undefined;
+
+                return (
+                  <CurrencyEquivalence
+                    enteredAmount={watchedAmount}
+                    enteredCurrency={watchedCurrency}
+                    installmentCurrency={installment.currency as "USD" | "ARS"}
+                    remainingAmount={remaining}
+                    manualRate={validManualRate}
+                  />
+                );
+              })()}
 
               {/* Partial payment warning */}
               {(() => {
