@@ -8,10 +8,12 @@ import { Eye } from "lucide-react";
 import {
   SALE_STATUS_LABELS,
   SALE_STATUS_COLORS,
+  SIGNING_STATUS_LABELS,
+  SIGNING_STATUS_COLORS,
 } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import { Price } from "@/components/shared/price";
-import type { SaleStatus, Currency } from "@/types/enums";
+import type { SaleStatus, Currency, SigningStatus } from "@/types/enums";
 
 type SaleRow = {
   id: string;
@@ -24,6 +26,7 @@ type SaleRow = {
   person: { id: string; firstName: string; lastName: string };
   seller: { id: string; name: string; lastName: string } | null;
   _count: { installments: number };
+  signingSlots?: { id: string; status: string }[];
 };
 
 interface Props {
@@ -82,6 +85,22 @@ export function SalesTable({ sales, canManage }: Props) {
           variant={SALE_STATUS_COLORS[sale.status]}
         />
       ),
+    },
+    {
+      key: "firma",
+      label: "Firma",
+      render: (sale) => {
+        const signing = sale.signingSlots?.[0];
+        if (!signing) {
+          return <span className="text-muted-foreground">{"\u2014"}</span>;
+        }
+        return (
+          <StatusBadge
+            label={SIGNING_STATUS_LABELS[signing.status as SigningStatus]}
+            variant={SIGNING_STATUS_COLORS[signing.status as SigningStatus]}
+          />
+        );
+      },
     },
     {
       key: "saleDate",
