@@ -1,188 +1,486 @@
-# Architecture Research
+# Architecture Patterns: Integracion Firma-Venta
 
-**Domain:** Real estate ERP — Testing infrastructure and lot visualization architecture
-**Researched:** 2026-02-26
-**Confidence:** HIGH
+**Domain:** Real estate ERP -- signing-sale integration, payment gating, auto-commission, exchange rate display
+**Researched:** 2026-03-16
+**Confidence:** HIGH (all findings based on direct codebase analysis)
 
----
+## Current Architecture Summary
 
-## System Overview
-
-```
-┌─────────────────────────────────────────────────────┐
-│ Presentation Layer (App Router + Components)         │
-│   Pages (async RSC) → _components/ (client/server)  │
-├─────────────────────────────────────────────────────┤
-│ Server Actions Layer                                 │
-│   requirePermission → Zod validation → model call   │
-├─────────────────────────────────────────────────────┤
-│ Data Access Layer (Models)                           │
-│   Prisma wrappers with .include() patterns          │
-├─────────────────────────────────────────────────────┤
-│ PostgreSQL                                           │
-└─────────────────────────────────────────────────────┘
-
-  ║ TEST INFRASTRUCTURE (parallel concern)
-  ║
-  ║  __tests__/unit/lib/     → Pure functions (zero mocking)
-  ║  __tests__/unit/models/  → Mocked Prisma
-  ║  __tests__/integration/  → Server actions (mocked auth + Prisma)
-```
-
----
-
-## Component Responsibilities
-
-| Layer | Component | Responsibility | Testable? |
-|-------|-----------|---------------|-----------|
-| Lib | `installment-generator.ts` | Generate installment plans | YES — pure function |
-| Lib | `installment-recalculator.ts` | Recalculate after refuerzo | YES — mock Prisma |
-| Lib | `sale-helpers.ts` | Client-side installment preview | YES — pure function |
-| Lib | `rbac.ts` | Permission checks | YES — pure function |
-| Lib | `exchange-rate.ts` | Fetch daily blue dollar rate | YES — mock fetch |
-| Actions | `sale.actions.ts` | Create/update sales | PARTIAL — mock auth + Prisma |
-| Actions | `payment.actions.ts` | Process payments | PARTIAL — mock auth + Prisma |
-| UI | `LotsSection` | Orchestrator: view toggle, filters, state | Component test |
-| UI | `LotsGrid` | Pure display: lot cards grouped by manzana | Component test |
-| UI | `LotDetailPanel` | Pure display: lot details on click | Component test |
-
----
-
-## Recommended Test Structure
+The system follows a strict four-layer architecture:
 
 ```
-__tests__/
-├── unit/
-│   ├── lib/
-│   │   ├── installment-generator.test.ts    # Pure, zero mocking
-│   │   ├── installment-recalculator.test.ts # Mocked Prisma
-│   │   ├── sale-helpers.test.ts             # Pure, parity with generator
-│   │   ├── rbac.test.ts                     # Pure, 4 roles × 16 perms
-│   │   ├── exchange-rate.test.ts            # Mocked fetch
-│   │   └── format.test.ts                   # Pure formatting utils
-│   └── schemas/
-│       ├── sale.schema.test.ts              # Zod validation tests
-│       └── person.schema.test.ts
-├── integration/
-│   └── actions/
-│       ├── sale.actions.test.ts             # Mocked auth + Prisma
-│       └── payment.actions.test.ts
-└── setup/
-    └── vitest.setup.ts                      # Global test config
+Page (Server Component) --> Server Actions --> Services --> Models --> Prisma
+                                                             |
+                                               Shared libs (audit, exchange-rate, service-error)
 ```
 
----
+- **Pages** are async Server Components that fetch data via server actions and pass serialized data to client components.
+- **Server Actions** handle auth checks (`requirePermission`), form parsing, Zod validation, delegation to services, and `revalidatePath`.
+- **Services** contain business logic, Prisma transactions, validation rules, and side-effect orchestration (receipts, audit).
+- **Models** are thin Prisma wrappers (findAll, findById, create, update) with include presets.
+- **Client Components** use `useActionState` + `react-hook-form` for form submission, and `useRouter().refresh()` for post-mutation revalidation.
 
-## Architectural Patterns for Testing
+## Feature Integration Analysis
 
-### 1. Pure Utility Testing (Zero Dependencies)
+### Feature 1: SigningSlot to Sale FK Relationship
+
+**Current state:** SigningSlot uses text fields (`clientName`, `lotInfo`, `lotNumbers`) with NO foreign key to Sale. It is a standalone scheduling table.
+
+**Target state:** Add nullable `saleId` FK on SigningSlot. 1:1 for normal sales, 1:N for multi-lote (multiple Sales share one groupId, one signing slot linked to primary sale or via groupId).
+
+#### Schema Change
+
+```prisma
+model SigningSlot {
+  // ... existing fields ...
+  saleId    String? @map("sale_id")
+
+  sale      Sale?   @relation(fields: [saleId], references: [id])
+  // ... existing relations ...
+}
+
+model Sale {
+  // ... existing fields/relations ...
+  signingSlot SigningSlot?
+}
+```
+
+**Key decisions:**
+- `saleId` is nullable for backward compatibility -- existing signings without linked sales continue to work.
+- For multi-lote sales (those sharing a `groupId`), link the signing to ONE sale in the group. The UI resolves the group via `sale.groupId`. This avoids a many-to-many join table.
+- The `@@unique` constraint is NOT needed on `saleId` because Prisma's `Sale.signingSlot` (optional 1:1 via `SigningSlot.saleId @unique`) would prevent multiple signings per sale. However, for multi-lote, we want one signing per group, not per sale. Therefore, saleId should NOT be `@unique` -- use application-level validation instead.
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `prisma/schema.prisma` | Add `saleId` FK to SigningSlot, add `signingSlot` relation to Sale |
+| `src/server/models/signing.model.ts` | Add `sale` to `includeBase`, add `findBySaleId`/`findByGroupId` methods |
+| `src/server/models/sale.model.ts` | Add `signingSlot` to `findById` include |
+| `src/server/actions/signing.actions.ts` | Add `saleId` to create/update form parsing |
+| `src/schemas/signing.schema.ts` | Add optional `saleId` field |
+| `src/server/services/sale.service.ts` | In `serializeSaleForClient`, include signingSlot status |
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `prisma/migrations/XXXX_add_sale_id_to_signing_slot/migration.sql` | Auto-generated by `npx prisma migrate dev` |
+
+#### Data Flow
+
+```
+Sale Detail Page
+  |
+  +--> getSaleById() now returns { ...sale, signingSlot: { id, status, date, time } | null }
+  |
+  +--> UI shows signing status badge in SaleInfoCards
+  |
+  +--> "Gestionar Firma" button opens signing management from sale context
+```
+
+### Feature 2: Payment Gating (Firma Required Before Payments)
+
+**Current state:** `payInstallment` and `payExtraCharge` in `payment.service.ts` check only installment/extraCharge status (PENDIENTE/PARCIAL/VENCIDA). No signing check exists.
+
+**Target state:** Before allowing installment/extraCharge payment, verify that the sale's signing is COMPLETADA. Exempt sale statuses: CONTADO, CESION (these types skip the installment flow entirely or have no signing requirement per business rules).
+
+#### Integration Point: Service Layer
+
+The check belongs in `payment.service.ts`, NOT in the action or UI layer. Reason: the service is the single enforcement point for business rules, and both the sale detail page and the cobranza page call the same service.
 
 ```typescript
-// __tests__/unit/lib/installment-generator.test.ts
-import { generateInstallments } from '@/lib/installment-generator'
+// In payment.service.ts, inside payInstallment, after fetching installment:
 
-describe('generateInstallments', () => {
-  it('clamps collectionDay 31 to Feb 28', () => {
-    const result = generateInstallments({
-      totalInstallments: 3,
-      installmentAmount: 1000,
-      startDate: new Date('2026-01-15'),
-      collectionDay: 31,
-    })
-    expect(result[1].dueDate.getDate()).toBe(28) // Feb
-  })
-})
+// Payment gating: require completed signing for ACTIVA sales
+if (installment.sale.status === "ACTIVA") {
+  const signing = await tx.signingSlot.findFirst({
+    where: {
+      OR: [
+        { saleId: installment.saleId },
+        // For multi-lote: check groupId
+        ...(installment.sale.groupId
+          ? [{ sale: { groupId: installment.sale.groupId } }]
+          : []),
+      ],
+    },
+    select: { status: true },
+  });
+
+  if (!signing || signing.status !== "COMPLETADA") {
+    throw new ServiceError(
+      "No se puede registrar el pago: la firma debe estar completada"
+    );
+  }
+}
 ```
 
-### 2. Server Action Testing (3 Mocks Required)
+**Exempt statuses:** CONTADO (no installments), CESION (supplier transfer, no installments), COMPLETADA (already done), CANCELADA (rejected by existing check).
 
-Every server action requires mocking:
-1. `requirePermission` (from `@/lib/auth-guard`)
-2. `prisma` (from `@/lib/prisma`)
-3. `revalidatePath` (from `next/cache`)
+#### UI Gating (Defense in Depth)
+
+The "Pagar" button in `installments-table.tsx` and cobranza results should also be disabled/hidden when signing is not completed. This is a UX improvement, not the enforcement point.
+
+```
+InstallmentsTable receives: signingStatus prop
+  |
+  +--> If signingStatus !== "COMPLETADA" && sale.status === "ACTIVA":
+       - Disable "Pagar" buttons
+       - Show info banner: "Los pagos se habilitan al completar la firma"
+```
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/server/services/payment.service.ts` | Add signing status check in `payInstallment` and `payExtraCharge` |
+| `src/app/(dashboard)/ventas/[id]/_components/installments-table.tsx` | Add `signingStatus` prop, disable pay buttons, show banner |
+| `src/app/(dashboard)/ventas/[id]/page.tsx` | Pass `signingSlot?.status` to InstallmentsTable |
+| `src/app/(dashboard)/cobranza/page.tsx` | Include signing status in serialized data for gating |
+
+### Feature 3: Auto-Commission on Signing Completion
+
+**Current state:** `commissionAmount` is stored on Sale as a Decimal. Commission CashMovements (type COMISION) are created manually via the caja page. The `updateSigningStatus` action in `signing.actions.ts` simply calls `signingModel.updateStatus(id, status)` with no side effects.
+
+**Target state:** When a signing status transitions to COMPLETADA, the system automatically creates a CashMovement of type COMISION if the linked sale has a `sellerId` and `commissionAmount`.
+
+#### Integration Point: New Service Function
+
+Create a `signing.service.ts` that handles the status transition with side effects. The action calls the service instead of the model directly.
+
+```
+signing.actions.ts::updateSigningStatus
+  |
+  +--> signingService.completeSigning(id, userId)
+       |
+       +--> Prisma transaction:
+            1. Update signing status to COMPLETADA
+            2. Find linked sale (via saleId FK)
+            3. If sale.sellerId && sale.commissionAmount > 0:
+               - Create CashMovement { type: COMISION, saleId,
+                   developmentId, usdExpense: commissionAmount, ... }
+            4. Audit log
+```
+
+**Important considerations:**
+- Commission is an EXPENSE (usdExpense or arsExpense), not income.
+- The CashMovement links to the sale's developmentId for cost center reporting.
+- For multi-lote sales, commission is on the primary sale (or split -- but the current schema has `commissionAmount` per Sale, so it would trigger per-sale if each sale in the group has a signing linked).
+- Idempotency: check if a COMISION movement already exists for this saleId before creating. Prevents double-commission if the status is toggled.
+
+#### Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/server/services/signing.service.ts` | `completeSigning(id, userId)` business logic with auto-commission |
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/server/actions/signing.actions.ts` | `updateSigningStatus` calls service instead of model for COMPLETADA transitions |
+| `src/server/models/signing.model.ts` | Add `findBySaleId` method (needed by service) |
+
+### Feature 4: Exchange Rate Display in Payment Dialog
+
+**Current state:** The `PayInstallmentDialog` shows the amount, currency selector, and an optional `manualRate` field. There is no display of the current exchange rate or ARS/USD equivalence. The `getTodayExchangeRate` action exists and auto-fetches from dolarapi.com.
+
+**Target state:** When opening the payment dialog, fetch and display the current exchange rate. Show the ARS equivalent of a USD installment (or USD equivalent of an ARS installment). Let the user confirm the rate covers the installment.
+
+#### Integration Point: Client Component Enhancement
+
+```
+PayInstallmentDialog opens
+  |
+  +--> useEffect fetches getTodayExchangeRate() (or getLatestExchangeRate())
+  |
+  +--> Display section:
+       "Cotizacion blue venta: $1,250.00"
+       "Equivalencia: USD 500.00 = ARS 625,000.00"
+       |
+       +--> If user enters manualRate, recalculate equivalence
+       |
+       +--> If currency selected differs from installment currency:
+            Show converted amount prominently
+```
+
+#### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/app/(dashboard)/ventas/[id]/_components/pay-installment-dialog.tsx` | Fetch exchange rate on mount, show equivalence section |
+| `src/app/(dashboard)/ventas/[id]/_components/pay-extra-charge-dialog.tsx` | Same enhancement |
+
+#### No New Server Files Needed
+
+The `getTodayExchangeRate` and `getLatestExchangeRate` actions already exist in `exchange-rate.actions.ts`. The `convertCurrency` function exists in `lib/exchange-rate.ts`. These are sufficient.
+
+## Component Boundaries
+
+| Component | Responsibility | Communicates With |
+|-----------|---------------|-------------------|
+| `signing.service.ts` (NEW) | Signing completion business logic, auto-commission | `signing.model`, `prisma` directly in transaction |
+| `payment.service.ts` (MODIFIED) | Payment processing with signing gate | `prisma`, `receipt.service`, queries signingSlot within transaction |
+| `signing.model.ts` (MODIFIED) | Data access for signings with sale relation | `prisma` |
+| `sale.model.ts` (MODIFIED) | Data access for sales with signing relation | `prisma` |
+| `InstallmentsTable` (MODIFIED) | Installment display with payment gating UI | `PayInstallmentDialog` |
+| `SaleInfoCards` (MODIFIED) | Sale info display with signing status | None (receives props) |
+| `PayInstallmentDialog` (MODIFIED) | Payment form with exchange rate display | `exchange-rate.actions` |
+| `SigningFormDialog` (MODIFIED) | Signing form with optional sale link | `signing.actions` |
+
+## Data Flow: Complete Payment Lifecycle (After v1.2)
+
+```
+1. SALE CREATED
+   sale.service.createSale() --> Sale(ACTIVA) + Installments + Lot(VENDIDO)
+   No signing exists yet --> signingSlot is null
+
+2. SIGNING SCHEDULED
+   signing.actions.createSigning(saleId) --> SigningSlot(PENDIENTE, saleId=X)
+   Sale detail page shows: "Firma: Pendiente"
+
+3. PAYMENT ATTEMPT (BLOCKED)
+   User clicks "Pagar" on installment
+   payment.service.payInstallment() --> checks signing status
+   --> SigningSlot.status !== COMPLETADA --> throw ServiceError
+   UI: "Pagar" buttons disabled, banner shown
+
+4. SIGNING COMPLETED
+   signing.actions.updateSigningStatus(id, COMPLETADA)
+   --> signing.service.completeSigning(id, userId)
+   --> Transaction:
+       a. SigningSlot.status = COMPLETADA
+       b. IF sale.sellerId && sale.commissionAmount:
+          Create CashMovement(COMISION, usdExpense=commissionAmount)
+   --> revalidatePath("/firmas", "/ventas")
+
+5. PAYMENT ENABLED
+   User clicks "Pagar" on installment
+   --> PayInstallmentDialog opens
+   --> Fetches getTodayExchangeRate()
+   --> Shows "Blue venta: $1,250" + ARS equivalent
+   --> User confirms, submits
+
+6. PAYMENT PROCESSED
+   payment.service.payInstallment() --> signing check PASSES
+   --> CashMovement(CUOTA) created
+   --> Installment status updated
+   --> Receipt auto-generated
+   --> If all installments paid --> Sale(COMPLETADA)
+```
+
+## Recommended Architecture for New Service
+
+Follow the existing `payment.service.ts` pattern:
 
 ```typescript
-vi.mock('@/lib/auth-guard', () => ({
-  requirePermission: vi.fn().mockResolvedValue({ id: 'test-user', role: 'SUPER_ADMIN' }),
-}))
-vi.mock('@/lib/prisma', () => ({ prisma: mockDeep<PrismaClient>() }))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+// src/server/services/signing.service.ts
+
+import { prisma } from "@/lib/prisma";
+import { logAction } from "@/lib/audit";
+import { ServiceError } from "@/lib/service-error";
+
+export async function completeSigning(
+  signingId: string,
+  userId: string
+): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    // 1. Fetch signing with sale
+    const signing = await tx.signingSlot.findUnique({
+      where: { id: signingId },
+      include: {
+        sale: {
+          select: {
+            id: true,
+            sellerId: true,
+            commissionAmount: true,
+            currency: true,
+            lot: { select: { developmentId: true, lotNumber: true } },
+          },
+        },
+      },
+    });
+
+    if (!signing) throw new ServiceError("Turno de firma no encontrado");
+
+    // 2. Update signing status
+    await tx.signingSlot.update({
+      where: { id: signingId },
+      data: { status: "COMPLETADA" },
+    });
+
+    // 3. Auto-commission if sale is linked with seller and commission
+    if (
+      signing.sale &&
+      signing.sale.sellerId &&
+      signing.sale.commissionAmount &&
+      Number(signing.sale.commissionAmount) > 0
+    ) {
+      // Idempotency: check no existing COMISION for this sale
+      const existingCommission = await tx.cashMovement.findFirst({
+        where: {
+          saleId: signing.sale.id,
+          type: "COMISION",
+        },
+      });
+
+      if (!existingCommission) {
+        const amount = Number(signing.sale.commissionAmount);
+        const isUSD = signing.sale.currency === "USD";
+
+        await tx.cashMovement.create({
+          data: {
+            saleId: signing.sale.id,
+            developmentId: signing.sale.lot.developmentId,
+            date: new Date(),
+            type: "COMISION",
+            concept: `COMISION - LOTE ${signing.sale.lot.lotNumber}`,
+            usdExpense: isUSD ? amount : null,
+            arsExpense: !isUSD ? amount : null,
+            registeredById: userId,
+          },
+        });
+      }
+    }
+  });
+
+  await logAction(
+    "SigningSlot",
+    signingId,
+    "UPDATE",
+    { newData: { status: "COMPLETADA", autoCommission: true } },
+    userId
+  );
+}
 ```
 
-### 3. Lot Visualization Component Pattern
+## Patterns to Follow
 
-```
-LotsSection (orchestrator — owns state)
-  ├── LotFilters (emits filter changes)
-  ├── LotsGrid (pure display — receives lots, grouping, handlers)
-  │     └── Lot cards (color-coded by status)
-  └── LotDetailPanel (pure display — receives selected lot)
-        └── Mobile: Sheet wrapper
-        └── Desktop: Side panel
-```
+### Pattern 1: Service-Layer Business Rule Enforcement
+**What:** All business rules (payment gating, auto-commission) live in services, not actions or UI.
+**When:** Any time a business rule must be enforced regardless of entry point.
+**Why:** The cobranza page and the sale detail page both call the same `payInstallment` service. If the check were only in the action, a future API route could bypass it.
 
-**Data flow:** RSC page fetches lots → LotsSection manages view state → LotsGrid renders manzana groups → Click triggers LotDetailPanel
+### Pattern 2: Transaction-Scoped Side Effects
+**What:** Related mutations (status update + commission creation) happen in a single Prisma `$transaction`.
+**When:** Multiple database writes that must be atomic.
+**Why:** Existing pattern in `payInstallment` (CashMovement + Installment update) and `createSale` (Sale + Installments + Lot update).
 
----
+### Pattern 3: Fire-and-Forget for Non-Critical Side Effects
+**What:** Receipt generation and email sending happen OUTSIDE the transaction. Failure does not roll back the payment.
+**When:** Side effects that are valuable but not business-critical.
+**Why:** Existing pattern in `payment.service.ts` lines 152-159.
 
-## Data Flows
-
-### Unit Testing Flow
-```
-Test file → import pure function → call with test data → assert output
-(No framework, no mocking, no setup)
-```
-
-### Integration Testing Flow
-```
-Test file → vi.mock(auth-guard, prisma, next/cache)
-          → import action
-          → call action with test input
-          → assert prisma method was called correctly
-          → assert returned ActionResult
-```
-
-### Lot Visualization Flow
-```
-Page (RSC) → fetch lots from DB
-           → pass to LotsSection (client)
-           → LotsSection groups by manzana
-           → LotsGrid renders grouped cards
-           → Click → LotDetailPanel shows details
-```
-
----
+### Pattern 4: Prop-Drilling for Server Data
+**What:** Server components fetch data and pass serialized results as props to client components.
+**When:** Client components need server-side data (signing status, exchange rate).
+**Why:** The codebase consistently uses this pattern rather than client-side fetching. For the exchange rate display, this is an exception where the client component fetches on mount because the rate can change between page load and dialog open.
 
 ## Anti-Patterns to Avoid
 
-1. **Testing via HTTP instead of direct function calls** — Server actions are functions, call them directly with mocked dependencies
-2. **Putting state inside LotsGrid** — Keep it pure display; LotsSection owns all state
-3. **Global Prisma mock** — Use per-test mock setup to avoid test pollution
-4. **Floating-point equality** — Use `toBeCloseTo(n, 2)` for money assertions, not `toBe()`
+### Anti-Pattern 1: Checking Signing Status Only in UI
+**What:** Disabling the "Pagar" button without a server-side check.
+**Why bad:** A direct server action call (from a stale page, race condition, or malicious client) would bypass the check.
+**Instead:** Check in `payment.service.ts` (authoritative) AND in UI (informational).
 
----
+### Anti-Pattern 2: Creating a New Join Table for SigningSlot-Sale
+**What:** Adding a `SaleSigningSlot` join table for the relationship.
+**Why bad:** Overengineered. The relationship is fundamentally 1:1 (one signing per sale, or one signing per sale-group). A nullable FK on SigningSlot is simpler.
+**Instead:** Nullable `saleId` on SigningSlot. For multi-lote, link to one sale and resolve the group via `groupId`.
 
-## Build Order for Testing Infrastructure
+### Anti-Pattern 3: Auto-Creating Signing When Sale is Created
+**What:** Automatically creating a PENDIENTE signing slot when a new sale is created.
+**Why bad:** Not all sales need signings immediately. The signing date/time must be scheduled manually by admin. Auto-creation would create orphaned signings.
+**Instead:** Let the user create and link signings from the sale detail page or the firmas page.
 
-1. Install Vitest + deps + create config (no tests yet)
-2. Add `npm test` script to package.json
-3. Unit tests for pure functions (installment-generator, sale-helpers, rbac)
-4. Unit tests for mocked functions (installment-recalculator, exchange-rate)
-5. Integration tests for server actions (sale, payment)
-6. Component tests for lot visualization (LotsSection, LotsGrid)
+### Anti-Pattern 4: Putting Exchange Rate Fetch in the Server Component
+**What:** Fetching the exchange rate in the sale detail page server component and passing it to the dialog.
+**Why bad:** The page might be cached or loaded minutes before the dialog is opened. Stale rate.
+**Instead:** Fetch in the dialog's `useEffect` when it opens (the `getTodayExchangeRate` action has 1-hour `revalidate` caching anyway).
 
----
+## Migration Strategy
 
-## Integration Points
+The schema change adds a nullable column -- this is non-breaking:
 
-| External System | Testing Strategy |
-|----------------|-----------------|
-| PostgreSQL | Mock Prisma client (unit) |
-| Auth.js | Mock `auth()` and `requirePermission()` |
-| dolarapi.com | Always mock — external rate API |
-| Nodemailer | Always mock — email sending |
+```bash
+# 1. Add saleId to SigningSlot (nullable, no data migration needed)
+npx prisma migrate dev --name add_sale_id_to_signing_slot
 
----
+# 2. Regenerate Prisma client
+npx prisma generate
 
-*Architecture research for: Real estate ERP testing infrastructure*
-*Researched: 2026-02-26*
+# 3. Existing signings work unchanged (saleId = null)
+# 4. New signings can optionally link to a sale
+```
+
+No data migration script needed. Existing rows get `saleId = NULL`. The UI for linking existing signings to sales can be a manual task or a future "link signing" action.
+
+## Build Order (Dependency-Driven)
+
+```
+Phase 1: Schema + Model Layer (no UI changes, no business logic changes)
+  1. Schema migration (add saleId FK)
+  2. Update signing.model.ts (includeBase with sale, findBySaleId)
+  3. Update sale.model.ts (include signingSlot in findById)
+  4. Update schemas/signing.schema.ts (add optional saleId)
+  --> Tests: model queries return correct data
+
+Phase 2: Service Layer (business logic, no UI changes)
+  5. Create signing.service.ts (completeSigning with auto-commission)
+  6. Modify payment.service.ts (payment gating check)
+  7. Update signing.actions.ts (route COMPLETADA through service)
+  --> Tests: payment blocked without signing, commission created on completion
+
+Phase 3: UI Integration
+  8. SaleInfoCards: show signing status badge and date
+  9. InstallmentsTable: signingStatus prop, disable buttons, info banner
+  10. PayInstallmentDialog + PayExtraChargeDialog: exchange rate display
+  11. Sale detail page: pass signing data, add "Gestionar Firma" section
+  12. SigningFormDialog: add optional saleId field
+  13. Cobranza page: pass signing status for gating UI
+  --> Manual testing: full flow from sale creation through signing to payment
+```
+
+**Rationale:** Schema first because everything depends on the FK. Services second because they need the model changes but the UI does not need service changes to compile. UI last because it depends on both model shape changes (signingSlot on sale) and service behavior (payment gating error messages).
+
+## Complete Change Inventory
+
+### New Files (3)
+
+| File | Purpose |
+|------|---------|
+| `src/server/services/signing.service.ts` | Business logic for signing completion with auto-commission |
+| `prisma/migrations/XXXX_.../migration.sql` | Auto-generated schema migration |
+| Sale detail signing section component (TBD) | UI for managing signing from sale context |
+
+### Modified Files (13)
+
+| File | Change Summary |
+|------|---------------|
+| `prisma/schema.prisma` | Add `saleId` FK on SigningSlot, add `signingSlot` relation on Sale |
+| `src/server/models/signing.model.ts` | Add sale to include, add findBySaleId |
+| `src/server/models/sale.model.ts` | Add signingSlot to findById include |
+| `src/schemas/signing.schema.ts` | Add optional saleId to create/update schemas |
+| `src/server/services/payment.service.ts` | Add signing gating check in payInstallment and payExtraCharge |
+| `src/server/services/sale.service.ts` | Serialize signingSlot in serializeSaleForClient |
+| `src/server/actions/signing.actions.ts` | Route COMPLETADA through signing.service, add saleId parsing |
+| `src/app/(dashboard)/ventas/[id]/page.tsx` | Pass signingSlot data to child components |
+| `src/app/(dashboard)/ventas/[id]/_components/sale-info-cards.tsx` | Display signing status |
+| `src/app/(dashboard)/ventas/[id]/_components/installments-table.tsx` | Accept signingStatus prop, disable buttons, show banner |
+| `src/app/(dashboard)/ventas/[id]/_components/pay-installment-dialog.tsx` | Fetch and display exchange rate equivalence |
+| `src/app/(dashboard)/ventas/[id]/_components/pay-extra-charge-dialog.tsx` | Fetch and display exchange rate equivalence |
+| `src/app/(dashboard)/cobranza/page.tsx` | Include signing status in serialized data |
+
+## Sources
+
+- Direct codebase analysis of all files referenced in this document
+- Prisma schema at `prisma/schema.prisma` (v0.7)
+- Payment service at `src/server/services/payment.service.ts`
+- Signing actions at `src/server/actions/signing.actions.ts`
+- Signing model at `src/server/models/signing.model.ts`
+- Exchange rate actions at `src/server/actions/exchange-rate.actions.ts`
+- Sale detail page at `src/app/(dashboard)/ventas/[id]/page.tsx`
+- Sale info cards at `src/app/(dashboard)/ventas/[id]/_components/sale-info-cards.tsx`
+- Installments table at `src/app/(dashboard)/ventas/[id]/_components/installments-table.tsx`
+- Pay installment dialog at `src/app/(dashboard)/ventas/[id]/_components/pay-installment-dialog.tsx`
+- Cobranza page at `src/app/(dashboard)/cobranza/page.tsx`
