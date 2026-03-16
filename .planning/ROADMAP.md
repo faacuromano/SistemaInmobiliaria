@@ -51,7 +51,9 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`
   3. Querying a SigningSlot includes its related Sale (if any) in the response
   4. Zod schemas validate `saleId` as optional string on signing creation/update
   5. Existing SigningSlots without a linked sale continue to work without errors
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 08-01-PLAN.md — Add saleId FK on SigningSlot, update models/schemas/actions
 
 ### Phase 9: Service Layer
 **Goal**: Business rules enforce that installment/refuerzo payments require a completed signing, exempt sales bypass the gate, and completing a signing auto-generates the seller commission
@@ -91,6 +93,6 @@ Phases execute in numeric order: 8 -> 9 -> 10
 | 5. Quick Fixes | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 6. Estadisticas Overhaul | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 7. Features & Polish | v1.1 | 2/2 | Complete | 2026-02-26 |
-| 8. Schema & Data Layer | v1.2 | 0/? | Not started | - |
+| 8. Schema & Data Layer | v1.2 | 0/1 | Not started | - |
 | 9. Service Layer | v1.2 | 0/? | Not started | - |
 | 10. UI Integration | v1.2 | 0/? | Not started | - |
