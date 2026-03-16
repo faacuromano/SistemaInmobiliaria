@@ -341,6 +341,7 @@ model Sale {
   firstInstallmentMonth    String?    @map("first_installment_month")
   collectionDay            Int?       @map("collection_day")
   commissionAmount         Decimal?   @db.Decimal(12, 2) @map("commission_amount")
+  exchangeRateOverride     Decimal?   @db.Decimal(10, 2) @map("exchange_rate_override")
   status                   SaleStatus @default(ACTIVA)
   notes                    String?    @db.Text // Entregas de propiedad, permutas, etc.
   paymentWindow            String?    @map("payment_window") // Ventana de pago: "del 1 al 20", "vence el 30", etc.
@@ -356,6 +357,7 @@ model Sale {
   extraCharges  ExtraCharge[]
   cashMovements CashMovement[]
   receipts      PaymentReceipt[]
+  signingSlots  SigningSlot[]
 
   @@index([groupId])
   @@index([status])
@@ -592,15 +594,18 @@ model SigningSlot {
   status        SigningStatus @default(PENDIENTE)
   notes         String?
   createdById   String?      @map("created_by_id")
+  saleId        String?       @map("sale_id")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   development Development? @relation(fields: [developmentId], references: [id])
   seller      User?        @relation("SigningSeller", fields: [sellerId], references: [id])
   createdBy   User?        @relation("SigningCreatedBy", fields: [createdById], references: [id])
+  sale        Sale?         @relation(fields: [saleId], references: [id], onDelete: SetNull)
 
   @@index([date])
   @@index([status])
+  @@index([saleId])
   @@map("signing_slots")
 }
 
