@@ -51,7 +51,7 @@ Full details: `.planning/milestones/v1.2-ROADMAP.md`
 
 **Parallelism:** Phases 11, 12, 13 are independent (Wave 1). Phase 14 builds on 13. Phase 15 synthesizes all prior phases.
 
-- [ ] **Phase 11: Conceptual Overview** — System purpose, modules, roles documented in AUDIT_CONCEPT.md
+- [x] **Phase 11: Conceptual Overview** — System purpose, modules, roles documented in AUDIT_CONCEPT.md (completed 2026-03-16)
 - [ ] **Phase 12: Database Architecture** — Full schema, relationships, dual-currency, audit trail in AUDIT_DATABASE.md
 - [ ] **Phase 13: Backend Audit** — Every server action exhaustively documented in AUDIT_BACKEND.md
 - [ ] **Phase 14: Frontend Architecture** — Route map, component tree, auth flow, UI patterns in AUDIT_FRONTEND.md
@@ -150,7 +150,7 @@ Wave 3: Phase 15 (after 12, 13, 14)
 | 8. Schema & Data Layer | v1.2 | 1/1 | Complete | 2026-03-16 |
 | 9. Service Layer | v1.2 | 2/2 | Complete | 2026-03-16 |
 | 10. UI Integration | v1.2 | 2/2 | Complete | 2026-03-16 |
-| 11. Conceptual Overview | v1.3 | 0/1 | Not started | - |
+| 11. Conceptual Overview | 1/1 | Complete   | 2026-03-16 | - |
 | 12. Database Architecture | v1.3 | 0/1 | Not started | - |
 | 13. Backend Audit | v1.3 | 0/2 | Not started | - |
 | 14. Frontend Architecture | v1.3 | 0/1 | Not started | - |
