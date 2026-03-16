@@ -150,7 +150,7 @@ Wave 3: Phase 15 (after 12, 13, 14)
 | 8. Schema & Data Layer | v1.2 | 1/1 | Complete | 2026-03-16 |
 | 9. Service Layer | v1.2 | 2/2 | Complete | 2026-03-16 |
 | 10. UI Integration | v1.2 | 2/2 | Complete | 2026-03-16 |
-| 11. Conceptual Overview | 1/1 | Complete   | 2026-03-16 | - |
+| 11. Conceptual Overview | 1/1 | Complete    | 2026-03-16 | - |
 | 12. Database Architecture | v1.3 | 0/1 | Not started | - |
 | 13. Backend Audit | v1.3 | 0/2 | Not started | - |
 | 14. Frontend Architecture | v1.3 | 0/1 | Not started | - |
