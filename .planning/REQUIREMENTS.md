@@ -17,9 +17,9 @@ Requirements for Integracion Firma-Venta milestone. Each maps to roadmap phases.
 
 ### Pagos (Payment Gating & Exchange Rate)
 
-- [ ] **PAGO-01**: Sistema bloquea pago de cuotas si la venta no tiene firma con status COMPLETADA
-- [ ] **PAGO-02**: Sistema bloquea pago de refuerzos si la venta no tiene firma con status COMPLETADA
-- [ ] **PAGO-03**: Ventas de contado, cesion y permuta estan exentas del bloqueo de firma
+- [x] **PAGO-01**: Sistema bloquea pago de cuotas si la venta no tiene firma con status COMPLETADA
+- [x] **PAGO-02**: Sistema bloquea pago de refuerzos si la venta no tiene firma con status COMPLETADA
+- [x] **PAGO-03**: Ventas de contado, cesion y permuta estan exentas del bloqueo de firma
 - [ ] **PAGO-04**: UI muestra botones de pago deshabilitados con tooltip explicativo cuando la firma no esta completada
 - [ ] **PAGO-05**: Dialog de pago muestra equivalencia ARS/USD usando cotizacion (API o manual) y confirma que el monto cubre la cuota
 
@@ -62,9 +62,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIRMA-03 | Phase 10 | Pending |
 | FIRMA-04 | Phase 10 | Pending |
 | FIRMA-05 | Phase 10 | Pending |
-| PAGO-01 | Phase 9 | Pending |
-| PAGO-02 | Phase 9 | Pending |
-| PAGO-03 | Phase 9 | Pending |
+| PAGO-01 | Phase 9 | Complete |
+| PAGO-02 | Phase 9 | Complete |
+| PAGO-03 | Phase 9 | Complete |
 | PAGO-04 | Phase 10 | Pending |
 | PAGO-05 | Phase 10 | Pending |
 | COMIS-01 | Phase 9 | Pending |

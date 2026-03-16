@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Integracion Firma-Venta
-status: completed
-stopped_at: Phase 9 context gathered
-last_updated: "2026-03-16T06:37:12.879Z"
-last_activity: 2026-03-16 -- Completed phase 08 plan 01
+status: executing
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-16T14:26:22.253Z"
+last_activity: 2026-03-16 -- Completed phase 09 plan 01
 progress:
   total_phases: 3
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
-  percent: 100
+  total_plans: 3
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** The client can manage their entire real estate operation -- from lot availability through sale, installment collection, and cash tracking -- in one system, with every transaction auditable and every peso accounted for.
-**Current focus:** Phase 8 - Schema & Data Layer (v1.2)
+**Current focus:** Phase 9 - Service Layer (v1.2)
 
 ## Current Position
 
-Phase: 8 of 10 (Schema & Data Layer)
-Plan: 1 of 1 complete
-Status: Phase 8 complete
-Last activity: 2026-03-16 -- Completed phase 08 plan 01
+Phase: 9 of 10 (Service Layer)
+Plan: 1 of 2 complete
+Status: Phase 9 in progress
+Last activity: 2026-03-16 -- Completed phase 09 plan 01
 
-Progress: v1.0 [####] | v1.1 [####] | v1.2 [██████████] 100%
+Progress: v1.0 [####] | v1.1 [####] | v1.2 [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -51,6 +51,8 @@ v1.2 pending decisions:
 - Firma optional for contado/cesion/permuta sales
 - Auto-commission on firma completion (no manual approval)
 - [Phase 08]: Used db push (not migrate dev) for schema changes since project has no migration history
+- [Phase 09]: Gate check runs BEFORE transaction to fail fast and avoid unnecessary DB locks
+- [Phase 09]: Legacy sales without SigningSlot allowed through for backward compatibility
 
 ### Pending Todos
 
@@ -64,6 +66,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T06:37:12.876Z
-Stopped at: Phase 9 context gathered
-Resume file: .planning/phases/09-service-layer/09-CONTEXT.md
+Last session: 2026-03-16T14:26:22.250Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
