@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Integracion Firma-Venta
-status: in-progress
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-03-16T20:39:03.340Z"
-last_activity: 2026-03-16 -- Completed phase 10 plan 01
+status: completed
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-03-16T20:45:33.756Z"
+last_activity: 2026-03-16 -- Completed phase 10 plan 02 (final plan)
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 5
-  completed_plans: 4
-  percent: 80
+  completed_plans: 5
+  percent: 100
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 10 of 10 (UI Integration)
-Plan: 1 of 2 complete
-Status: Executing phase 10
-Last activity: 2026-03-16 -- Completed phase 10 plan 01
+Plan: 2 of 2 complete
+Status: Milestone v1.2 complete
+Last activity: 2026-03-16 -- Completed phase 10 plan 02 (final plan)
 
-Progress: v1.0 [####] | v1.1 [####] | v1.2 [████████░░] 80%
+Progress: v1.0 [####] | v1.1 [####] | v1.2 [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 2.9min
-- Total execution time: 49.2min
+- Total execution time: 52.2min
 
 *Updated after each plan completion*
 
@@ -58,6 +58,8 @@ v1.2 pending decisions:
 - [Phase 09]: Idempotency via findFirst(type=COMISION, saleId) prevents duplicate commissions
 - [Phase 10]: Used prisma directly in signing server actions for link/unlink/getUnlinked queries
 - [Phase 10]: Both Crear Nueva and Vincular Existente open same FirmaManagementDialog in link mode
+- [Phase 10]: Used blueSell rate as default exchange rate for CurrencyEquivalence display
+- [Phase 10]: Coverage check converts entered amount to installment currency before comparison
 
 ### Pending Todos
 
@@ -71,6 +73,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T20:38:00Z
-Stopped at: Completed 10-01-PLAN.md
-Resume file: .planning/phases/10-ui-integration/10-02-PLAN.md
+Last session: 2026-03-16T20:45:33.752Z
+Stopped at: Completed 10-02-PLAN.md
+Resume file: None

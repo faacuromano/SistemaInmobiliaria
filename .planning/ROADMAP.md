@@ -37,7 +37,7 @@ Full details: `.planning/milestones/v1.1-ROADMAP.md`
 
 - [ ] **Phase 8: Schema & Data Layer** - SigningSlot-Sale FK, model updates, Zod schema extensions
 - [ ] **Phase 9: Service Layer** - Payment gating, firma exemptions, auto-commission on signing completion
-- [ ] **Phase 10: UI Integration** - Firma status display, payment UX gating, signing management from sale detail, exchange rate equivalence
+- [x] **Phase 10: UI Integration** - Firma status display, payment UX gating, signing management from sale detail, exchange rate equivalence (completed 2026-03-16)
 
 ## Phase Details
 
@@ -80,7 +80,7 @@ Plans:
   3. User can create a new signing or link an existing one directly from the sale detail page
   4. Payment buttons on installments/refuerzos are visually disabled with an explanatory tooltip when signing is not completed
   5. Payment dialog shows the ARS/USD equivalence using the current exchange rate and confirms the amount covers the installment
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 10-01-PLAN.md — Firma status display, management dialog, sales table column, server actions
 - [ ] 10-02-PLAN.md — Payment button gating with tooltip, currency equivalence in payment dialogs
@@ -101,4 +101,4 @@ Phases execute in numeric order: 8 -> 9 -> 10
 | 7. Features & Polish | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 8. Schema & Data Layer | v1.2 | 0/1 | Not started | - |
 | 9. Service Layer | v1.2 | 0/2 | Not started | - |
-| 10. UI Integration | 1/2 | In Progress|  | - |
+| 10. UI Integration | 2/2 | Complete   | 2026-03-16 | - |
