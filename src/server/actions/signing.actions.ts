@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
+import { prisma } from "@/lib/prisma";
 import { signingModel } from "@/server/models/signing.model";
 import {
   signingCreateSchema,
@@ -45,7 +46,7 @@ export async function createSigning(
     developmentId: formData.get("developmentId"),
     sellerId: formData.get("sellerId"),
     notes: formData.get("notes"),
-    saleId: formData.get("saleId"),
+    saleId: formData.get("saleId") ?? undefined,
   };
 
   const parsed = signingCreateSchema.safeParse(raw);
@@ -68,10 +69,13 @@ export async function createSigning(
   });
 
   await logAction("SigningSlot", signing.id, "CREATE", {
-    newData: { date: parsed.data.date, time: parsed.data.time, lotInfo: parsed.data.lotInfo },
+    newData: { date: parsed.data.date, time: parsed.data.time, lotInfo: parsed.data.lotInfo, saleId: parsed.data.saleId },
   }, session.user.id);
 
   revalidatePath("/firmas");
+  if (parsed.data.saleId) {
+    revalidatePath("/ventas");
+  }
   return { success: true };
 }
 
@@ -92,7 +96,7 @@ export async function updateSigning(
     developmentId: formData.get("developmentId"),
     sellerId: formData.get("sellerId"),
     notes: formData.get("notes"),
-    saleId: formData.get("saleId"),
+    saleId: formData.get("saleId") ?? undefined,
     status: formData.get("status") || undefined,
   };
 
@@ -120,6 +124,9 @@ export async function updateSigning(
   });
 
   revalidatePath("/firmas");
+  if (parsed.data.saleId) {
+    revalidatePath("/ventas");
+  }
   return { success: true };
 }
 
@@ -183,5 +190,52 @@ export async function deleteSigning(id: string): Promise<ActionResult> {
   });
 
   revalidatePath("/firmas");
+  return { success: true };
+}
+
+export async function getUnlinkedSignings(developmentId: string) {
+  await requirePermission("signings:view");
+  return prisma.signingSlot.findMany({
+    where: { saleId: null, developmentId },
+    select: {
+      id: true,
+      clientName: true,
+      lotInfo: true,
+      date: true,
+      time: true,
+      status: true,
+    },
+    orderBy: { date: "desc" },
+  });
+}
+
+export async function unlinkSigningFromSale(
+  signingId: string
+): Promise<ActionResult> {
+  const session = await requirePermission("signings:manage");
+
+  const signing = await signingModel.findById(signingId);
+  if (!signing) {
+    return { success: false, error: "Turno de firma no encontrado" };
+  }
+
+  await prisma.signingSlot.update({
+    where: { id: signingId },
+    data: { saleId: null },
+  });
+
+  await logAction(
+    "SigningSlot",
+    signingId,
+    "UPDATE",
+    {
+      oldData: { saleId: signing.saleId },
+      newData: { saleId: null },
+    },
+    session.user.id
+  );
+
+  revalidatePath("/firmas");
+  revalidatePath("/ventas");
   return { success: true };
 }
