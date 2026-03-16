@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requirePermission } from "@/lib/auth-guard";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import { getSaleById } from "@/server/actions/sale.actions";
 import { getCashMovementsBySale } from "@/server/actions/cash-movement.actions";
 import { getPaymentReceipts } from "@/server/actions/payment-receipt.actions";
+import { getDevelopmentOptions } from "@/server/actions/development.actions";
+import { getActiveSellers } from "@/server/actions/user.actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -29,15 +32,32 @@ export default async function SaleDetailPage({ params }: Props) {
   const session = await requirePermission("sales:view");
   const { id } = await params;
 
-  const [sale, movements, receipts] = await Promise.all([
+  const [sale, movements, receipts, developments, sellersRaw] = await Promise.all([
     getSaleById(id),
     getCashMovementsBySale(id),
     getPaymentReceipts({ saleId: id }),
+    getDevelopmentOptions(),
+    getActiveSellers(),
   ]);
 
   if (!sale) notFound();
 
-  const canManage = hasPermission(session.user.role, "sales:manage");
+  const canManage = await checkPermissionDb(session.user.role as Role, "sales:manage");
+
+  const sellers = sellersRaw.map((s) => ({
+    id: s.id,
+    name: `${s.name} ${s.lastName}`,
+  }));
+
+  const EXEMPT_STATUSES = ["CONTADO", "CESION"];
+  const isExempt = EXEMPT_STATUSES.includes(sale.status);
+  const signingGateActive =
+    !isExempt &&
+    sale.signingSlots &&
+    sale.signingSlots.length > 0 &&
+    !sale.signingSlots.some(
+      (s: { status: string }) => s.status === "COMPLETADA"
+    );
 
   const lotLabel = sale.lot.block
     ? `Lote ${sale.lot.lotNumber} - Mz ${sale.lot.block}`
@@ -66,13 +86,14 @@ export default async function SaleDetailPage({ params }: Props) {
         </div>
       </PageHeader>
 
-      <SaleInfoCards sale={sale} />
+      <SaleInfoCards sale={sale} developments={developments} sellers={sellers} />
 
       <InstallmentsTable
         installments={sale.installments}
         extraCharges={sale.extraCharges}
         canManage={canManage}
         saleId={sale.id}
+        signingGateActive={!!signingGateActive}
       />
 
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

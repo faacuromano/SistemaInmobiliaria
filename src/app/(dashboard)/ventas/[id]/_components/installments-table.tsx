@@ -53,6 +53,7 @@ interface InstallmentsTableProps {
   extraCharges: ExtraChargeRow[];
   canManage: boolean;
   saleId: string;
+  signingGateActive?: boolean;
 }
 
 function getInstallmentColumns(

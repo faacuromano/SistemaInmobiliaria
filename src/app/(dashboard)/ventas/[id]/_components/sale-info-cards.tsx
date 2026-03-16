@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -11,9 +12,13 @@ import {
   LOT_STATUS_LABELS,
   LOT_STATUS_COLORS,
   CURRENCY_LABELS,
+  SIGNING_STATUS_LABELS,
+  SIGNING_STATUS_COLORS,
 } from "@/lib/constants";
-import type { SaleStatus, LotStatus, Currency } from "@/types/enums";
-import { User, MapPin, FileText, Users } from "lucide-react";
+import type { SaleStatus, LotStatus, Currency, SigningStatus } from "@/types/enums";
+import { Button } from "@/components/ui/button";
+import { User, MapPin, FileText, Users, PenTool, Plus, Link2 } from "lucide-react";
+import { FirmaManagementDialog } from "./firma-management-dialog";
 
 interface SaleDetail {
   id: string;
@@ -50,14 +55,26 @@ interface SaleDetail {
     email: string | null;
   };
   seller: { id: string; name: string; lastName: string } | null;
+  signingSlots?: {
+    id: string;
+    date: Date | string;
+    time: string;
+    status: string;
+    notes: string | null;
+  }[];
 }
 
 interface SaleInfoCardsProps {
   sale: SaleDetail;
+  developments: Array<{ id: string; name: string }>;
+  sellers: Array<{ id: string; name: string }>;
 }
 
-export function SaleInfoCards({ sale }: SaleInfoCardsProps) {
+export function SaleInfoCards({ sale, developments, sellers }: SaleInfoCardsProps) {
+  const [firmaDialogOpen, setFirmaDialogOpen] = useState(false);
   const showSellerCard = sale.seller || sale.commissionAmount;
+  const isExempt = sale.status === "CONTADO" || sale.status === "CESION";
+  const signing = sale.signingSlots?.[0] ?? null;
 
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -259,6 +276,70 @@ export function SaleInfoCards({ sale }: SaleInfoCardsProps) {
         </Card>
       )}
 
+      {/* Card 5: Firma de Escritura (hidden for exempt sales) */}
+      {!isExempt && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PenTool className="h-4 w-4" />
+              Firma de Escritura
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {signing ? (
+              <div
+                className="cursor-pointer space-y-3"
+                onClick={() => setFirmaDialogOpen(true)}
+              >
+                <div>
+                  <p className="text-sm text-muted-foreground">Estado</p>
+                  <StatusBadge
+                    label={SIGNING_STATUS_LABELS[signing.status as SigningStatus]}
+                    variant={SIGNING_STATUS_COLORS[signing.status as SigningStatus]}
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Fecha</p>
+                  <p className="font-medium">{formatDate(signing.date)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Hora</p>
+                  <p className="font-medium">{signing.time}</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm text-muted-foreground">Estado</p>
+                  <StatusBadge label="Sin firma asignada" variant="default" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Esta venta aun no tiene una firma de escritura vinculada.
+                </p>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFirmaDialogOpen(true)}
+                  >
+                    <Plus className="mr-2 h-3.5 w-3.5" />
+                    Crear Nueva
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFirmaDialogOpen(true)}
+                  >
+                    <Link2 className="mr-2 h-3.5 w-3.5" />
+                    Vincular Existente
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Notes card (conditional) */}
       {sale.notes && (
         <Card className="md:col-span-2">
@@ -269,6 +350,22 @@ export function SaleInfoCards({ sale }: SaleInfoCardsProps) {
             <p className="whitespace-pre-wrap text-sm">{sale.notes}</p>
           </CardContent>
         </Card>
+      )}
+
+      {!isExempt && (
+        <FirmaManagementDialog
+          open={firmaDialogOpen}
+          onOpenChange={setFirmaDialogOpen}
+          sale={{
+            id: sale.id,
+            sellerId: sale.sellerId,
+            person: sale.person,
+            lot: sale.lot,
+          }}
+          signing={signing}
+          developments={developments}
+          sellers={sellers}
+        />
       )}
     </div>
   );

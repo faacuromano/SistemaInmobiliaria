@@ -239,3 +239,35 @@ export async function unlinkSigningFromSale(
   revalidatePath("/ventas");
   return { success: true };
 }
+
+export async function linkSigningToSale(
+  signingId: string,
+  saleId: string
+): Promise<ActionResult> {
+  const session = await requirePermission("signings:manage");
+
+  const signing = await signingModel.findById(signingId);
+  if (!signing) {
+    return { success: false, error: "Turno de firma no encontrado" };
+  }
+
+  await prisma.signingSlot.update({
+    where: { id: signingId },
+    data: { saleId },
+  });
+
+  await logAction(
+    "SigningSlot",
+    signingId,
+    "UPDATE",
+    {
+      oldData: { saleId: signing.saleId },
+      newData: { saleId },
+    },
+    session.user.id
+  );
+
+  revalidatePath("/firmas");
+  revalidatePath("/ventas");
+  return { success: true };
+}
