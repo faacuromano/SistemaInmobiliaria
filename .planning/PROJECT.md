@@ -48,21 +48,18 @@ The client can manage their entire real estate operation — from lot availabili
 - ✓ Person detail page redesign with unified contact card, month-grouped payment history, professional tables — v1.1
 - ✓ Bulk lot editing with checkbox selection, floating actions bar, tag assignment, and status changes with safety guards — v1.1
 
+- ✓ SigningSlot↔Sale FK relationship with reciprocal queries and Zod validation — v1.2
+- ✓ Payment signing gate blocking installments/refuerzos until firma COMPLETADA (CONTADO/CESION exempt) — v1.2
+- ✓ Auto-commission CashMovement on signing completion with idempotency protection — v1.2
+- ✓ Firma management dialog (create/link/unlink) from sale detail with auto-fill — v1.2
+- ✓ Firma status badge column in sales table — v1.2
+- ✓ Currency equivalence with coverage check in payment dialogs — v1.2
+
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-## Current Milestone: v1.2 Integración Firma-Venta
-
-**Goal:** Vincular firmas con ventas como requisito para habilitar pagos y comisiones, convirtiendo la firma en el eje central del ciclo de vida de una venta.
-
-**Target features:**
-- Relación SigningSlot↔Sale en la DB (1:1 normal, 1:N para multi-lote)
-- Estado de firma visible en ventas: Por fijarse / Fijada / Completada
-- Bloqueo de pagos de cuotas hasta firma completada (excepto contado/cesión/permuta)
-- Comisión automática al vendedor al completar firma (CashMovement COMISION)
-- Equivalencia ARS↔USD visible al pagar, confirmar cobertura de cuota
-- Gestión de firma desde el detalle de venta
+(No active milestone — run /gsd:new-milestone to start next cycle)
 
 ### Out of Scope
 
@@ -80,15 +77,15 @@ The client can manage their entire real estate operation — from lot availabili
 
 - **Client**: Single real estate/construction company
 - **Builder**: Koncepto (user's company)
-- **Codebase state**: Feature-complete with polished UX, ~75,600 LOC TypeScript/TSX, 51 tests passing
+- **Codebase state**: Feature-complete with polished UX, ~76,800 LOC TypeScript/TSX, 51 tests passing
 - **Stack**: Next.js 15 (App Router) + TypeScript + PostgreSQL + Prisma ORM + Auth.js v5
 - **UI**: shadcn/ui + Tailwind CSS 4 + Lucide icons + Radix Collapsible
 - **Dual currency**: All monetary operations support USD/ARS with daily exchange rate
 - **Architecture**: Server-first with Server Components/Actions, layered (presentation → actions → models → Prisma)
 - **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
 - **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
-- **Shipped**: v1.0 Delivery Hardening (2026-02-26), v1.1 Bug Fixes & UX Polish (2026-02-26)
-- **Current milestone**: v1.2 Integración Firma-Venta
+- **Shipped**: v1.0 Delivery Hardening (2026-02-26), v1.1 Bug Fixes & UX Polish (2026-02-26), v1.2 Integracion Firma-Venta (2026-03-16)
+- **Current milestone**: None — ready for next milestone
 
 ## Constraints
 
@@ -119,10 +116,14 @@ The client can manage their entire real estate operation — from lot availabili
 | Bulk operations with safety guards | 200-lot limit, sales guard rejects lots with active sales | ✓ Good — v1.1 |
 | Dialog for bulk tags, DropdownMenu for status | Tags need confirm, status is instant apply | ✓ Good — v1.1 |
 
-| SigningSlot↔Sale FK relationship | Firma is the gate for payments and commissions — must be in DB, not text | — Pending |
-| Firma optional for contado/cesión/permuta | These sale types don't follow standard installment flow | — Pending |
-| Auto-commission on firma completion | Seller paid immediately when signing completes — no manual approval | — Pending |
-| 1:1 normal, 1:N multi-lote firmas | Multi-lote sales (groupId) share a single signing slot | — Pending |
+| SigningSlot↔Sale FK relationship | Firma is the gate for payments and commissions — must be in DB, not text | ✓ Good — v1.2 |
+| Firma optional for contado/cesión/permuta | These sale types don't follow standard installment flow | ✓ Good — v1.2 |
+| Auto-commission on firma completion | Seller paid immediately when signing completes — no manual approval | ✓ Good — v1.2 |
+| 1:N multi-lote firmas (saleId NOT unique) | Multiple SigningSlots can reference same Sale for multi-lote strategy | ✓ Good — v1.2 |
+| Gate check before transaction | Fail fast before acquiring DB locks | ✓ Good — v1.2 |
+| Commission uses expense fields | Commissions are company outflows (usdExpense/arsExpense) | ✓ Good — v1.2 |
+| Idempotency via findFirst | Prevents duplicate commissions on repeated signing completion | ✓ Good — v1.2 |
+| Radix tooltip span wrapper | Disabled buttons suppress pointer events — wrap in span tabIndex={0} | ✓ Good — v1.2 |
 
 ---
-*Last updated: 2026-03-16 after v1.2 milestone start*
+*Last updated: 2026-03-16 after v1.2 milestone complete*

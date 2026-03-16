@@ -89,6 +89,51 @@
 
 ---
 
+## Milestone: v1.2 — Integracion Firma-Venta
+
+**Shipped:** 2026-03-16
+**Phases:** 3 | **Plans:** 5 | **Sessions:** 1
+
+### What Was Built
+- SigningSlot↔Sale FK relationship with nullable saleId, reciprocal includes, and Zod validation
+- Payment signing gate in payment.service.ts blocking installment/refuerzo payments until firma COMPLETADA
+- Atomic signing completion service with auto-commission CashMovement and idempotency protection
+- FirmaManagementDialog with 4 modes (view/unlink/link/create) and auto-fill from sale data
+- Firma badge column in sales table with status-colored badges
+- CurrencyEquivalence component with live ARS/USD conversion and green/amber coverage check in payment dialogs
+
+### What Worked
+- UI-SPEC workflow: generated design contract before planning, caught typography issues (4 weights → 2) before execution
+- Research agent discovered critical Radix tooltip pitfall (disabled elements suppress pointer events) — span wrapper pattern applied preemptively
+- 3-phase layered approach (schema → service → UI) gave clean dependency chain with zero cross-wave conflicts
+- Phase 10 had comprehensive CONTEXT.md from discuss-phase — planner had zero ambiguity on locked decisions
+
+### What Was Inefficient
+- ROADMAP.md progress table still out of sync — phases 8-9 showed "Not started" and "0/1" after completion
+- Summary one_liner field still not populated (persistent issue from v1.0/v1.1)
+- UI-SPEC revision loop required 2 rounds — initial spec had 4 font weights, checker caught it
+
+### Patterns Established
+- Service-layer gate pattern: validate business rules BEFORE entering $transaction block
+- Exempt-status allow-list with `as const` for compile-time safety
+- Idempotency via findFirst check before creation in atomic transactions
+- Disabled button tooltip: wrap in `<span tabIndex={0}>` for Radix hover/focus events
+- CurrencyEquivalence: reusable component for cross-currency feedback in payment forms
+- FirmaManagementDialog: multi-mode dialog pattern (view/unlink/link/create in single component)
+
+### Key Lessons
+1. UI-SPEC verification catches design issues (excess font weights, missing focal points) that would become tech debt during execution
+2. Research before UI planning is valuable — discovered Radix tooltip limitation that would have been a mid-execution blocker
+3. Service layer with gate pattern (check → fail fast → proceed) is cleaner than embedding business rules in the transaction
+4. Commission idempotency is essential — signing completion can be triggered multiple times in production
+
+### Cost Observations
+- Model mix: ~65% opus (executor + researcher agents), ~25% sonnet (plan checkers, verifiers, UI checker), ~10% UI researcher
+- Sessions: 1 (entire milestone completed in single session)
+- Notable: 5 plans completed in ~13 minutes total execution time (2.6min average per plan)
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -97,6 +142,7 @@
 |-----------|----------|--------|------------|
 | v1.0 | 1 | 4 | Initial milestone — established testing patterns and delivery gates |
 | v1.1 | 1 | 3 | Polish milestone — bug fixes, UX improvements, new features |
+| v1.2 | 1 | 3 | Feature milestone — firma-venta integration, UI-SPEC workflow introduced |
 
 ### Cumulative Quality
 
@@ -104,9 +150,11 @@
 |-----------|-------|----------|-------------------|
 | v1.0 | 51 | Scoped (lib, server, schemas) | 1 (Radix Collapsible via shadcn) |
 | v1.1 | 51 | Unchanged | 0 (no new deps) |
+| v1.2 | 51 | Unchanged | 0 (no new deps — all shadcn components pre-installed) |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. ROADMAP.md progress table sync is a persistent issue — needs automation fix or manual post-execution step
-2. Summary one_liner field is consistently empty — executor template should make it required
+1. ROADMAP.md progress table sync is a persistent issue (3/3 milestones) — needs automation fix or manual post-execution step
+2. Summary one_liner field is consistently empty (3/3 milestones) — executor template should make it required
 3. Single-session milestones are achievable for 3-4 phase scopes — parallel wave execution is key enabler
+4. UI-SPEC verification loop catches design inconsistencies early — introduced in v1.2, proved valuable immediately

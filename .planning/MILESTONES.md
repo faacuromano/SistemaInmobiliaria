@@ -1,5 +1,21 @@
 # Milestones
 
+## v1.2 Integracion Firma-Venta (Shipped: 2026-03-16)
+
+**Phases completed:** 3 phases, 5 plans, 10 tasks
+**Timeline:** 1 day (2026-03-16)
+**Files modified:** 15 | **Lines added:** 1,262
+**Requirements:** 13/13 complete
+
+**Key accomplishments:**
+1. SigningSlot↔Sale nullable FK with reciprocal relation, Zod validation, and server action passthrough
+2. Payment signing gate blocking installment/refuerzo payments until firma COMPLETADA, exempting CONTADO/CESION
+3. Atomic signing completion with auto-commission CashMovement creation and idempotency protection
+4. FirmaManagementDialog for create/link/unlink signing from sale detail with auto-fill
+5. Firma badge column in sales table and currency equivalence with coverage check in payment dialogs
+
+---
+
 ## v1.0 Delivery Hardening (Shipped: 2026-02-26)
 
 **Phases completed:** 4 phases, 9 plans
