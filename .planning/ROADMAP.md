@@ -65,7 +65,10 @@ Plans:
   3. Paying installments/refuerzos on CONTADO, CESION, and PERMUTA sales succeeds regardless of signing status
   4. Completing a signing automatically creates a COMISION CashMovement linked to the sale, seller, and development
   5. Completing a signing that already has a commission does NOT create a duplicate
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 09-01-PLAN.md — Payment gating: block installment/refuerzo payments when signing not completed
+- [ ] 09-02-PLAN.md — Auto-commission: create COMISION CashMovement on signing completion
 
 ### Phase 10: UI Integration
 **Goal**: Users can see signing status on every sale, manage signings from the sale detail page, and understand payment blocking with clear visual feedback and currency equivalence
@@ -94,5 +97,5 @@ Phases execute in numeric order: 8 -> 9 -> 10
 | 6. Estadisticas Overhaul | v1.1 | 1/1 | Complete | 2026-02-26 |
 | 7. Features & Polish | v1.1 | 2/2 | Complete | 2026-02-26 |
 | 8. Schema & Data Layer | v1.2 | 0/1 | Not started | - |
-| 9. Service Layer | v1.2 | 0/? | Not started | - |
+| 9. Service Layer | v1.2 | 0/2 | Not started | - |
 | 10. UI Integration | v1.2 | 0/? | Not started | - |
