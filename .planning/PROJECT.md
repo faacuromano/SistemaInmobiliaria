@@ -52,7 +52,17 @@ The client can manage their entire real estate operation — from lot availabili
 
 <!-- Current scope. Building toward these. -->
 
-(No active milestone — ready for next milestone planning)
+## Current Milestone: v1.2 Integración Firma-Venta
+
+**Goal:** Vincular firmas con ventas como requisito para habilitar pagos y comisiones, convirtiendo la firma en el eje central del ciclo de vida de una venta.
+
+**Target features:**
+- Relación SigningSlot↔Sale en la DB (1:1 normal, 1:N para multi-lote)
+- Estado de firma visible en ventas: Por fijarse / Fijada / Completada
+- Bloqueo de pagos de cuotas hasta firma completada (excepto contado/cesión/permuta)
+- Comisión automática al vendedor al completar firma (CashMovement COMISION)
+- Equivalencia ARS↔USD visible al pagar, confirmar cobertura de cuota
+- Gestión de firma desde el detalle de venta
 
 ### Out of Scope
 
@@ -78,7 +88,7 @@ The client can manage their entire real estate operation — from lot availabili
 - **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
 - **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
 - **Shipped**: v1.0 Delivery Hardening (2026-02-26), v1.1 Bug Fixes & UX Polish (2026-02-26)
-- **Current milestone**: None — ready for next milestone planning
+- **Current milestone**: v1.2 Integración Firma-Venta
 
 ## Constraints
 
@@ -109,5 +119,10 @@ The client can manage their entire real estate operation — from lot availabili
 | Bulk operations with safety guards | 200-lot limit, sales guard rejects lots with active sales | ✓ Good — v1.1 |
 | Dialog for bulk tags, DropdownMenu for status | Tags need confirm, status is instant apply | ✓ Good — v1.1 |
 
+| SigningSlot↔Sale FK relationship | Firma is the gate for payments and commissions — must be in DB, not text | — Pending |
+| Firma optional for contado/cesión/permuta | These sale types don't follow standard installment flow | — Pending |
+| Auto-commission on firma completion | Seller paid immediately when signing completes — no manual approval | — Pending |
+| 1:1 normal, 1:N multi-lote firmas | Multi-lote sales (groupId) share a single signing slot | — Pending |
+
 ---
-*Last updated: 2026-02-26 after v1.1 milestone completion*
+*Last updated: 2026-03-16 after v1.2 milestone start*
