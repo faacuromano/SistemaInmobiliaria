@@ -68,33 +68,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONC-01 | TBD | Pending |
-| CONC-02 | TBD | Pending |
-| CONC-03 | TBD | Pending |
-| DB-01 | TBD | Pending |
-| DB-02 | TBD | Pending |
-| DB-03 | TBD | Pending |
-| DB-04 | TBD | Pending |
-| BACK-01 | TBD | Pending |
-| BACK-02 | TBD | Pending |
-| BACK-03 | TBD | Pending |
-| BACK-04 | TBD | Pending |
-| BACK-05 | TBD | Pending |
-| FRONT-01 | TBD | Pending |
-| FRONT-02 | TBD | Pending |
-| FRONT-03 | TBD | Pending |
-| FRONT-04 | TBD | Pending |
-| FLOW-01 | TBD | Pending |
-| FLOW-02 | TBD | Pending |
-| FLOW-03 | TBD | Pending |
-| FLOW-04 | TBD | Pending |
-| FLOW-05 | TBD | Pending |
+| CONC-01 | Phase 11 | Pending |
+| CONC-02 | Phase 11 | Pending |
+| CONC-03 | Phase 11 | Pending |
+| DB-01 | Phase 12 | Pending |
+| DB-02 | Phase 12 | Pending |
+| DB-03 | Phase 12 | Pending |
+| DB-04 | Phase 12 | Pending |
+| BACK-01 | Phase 13 | Pending |
+| BACK-02 | Phase 13 | Pending |
+| BACK-03 | Phase 13 | Pending |
+| BACK-04 | Phase 13 | Pending |
+| BACK-05 | Phase 13 | Pending |
+| FRONT-01 | Phase 14 | Pending |
+| FRONT-02 | Phase 14 | Pending |
+| FRONT-03 | Phase 14 | Pending |
+| FRONT-04 | Phase 14 | Pending |
+| FLOW-01 | Phase 15 | Pending |
+| FLOW-02 | Phase 15 | Pending |
+| FLOW-03 | Phase 15 | Pending |
+| FLOW-04 | Phase 15 | Pending |
+| FLOW-05 | Phase 15 | Pending |
 
 **Coverage:**
-- v1.3 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- v1.3 requirements: 21 total
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after initial definition*
+*Last updated: 2026-03-16 after roadmap creation*
