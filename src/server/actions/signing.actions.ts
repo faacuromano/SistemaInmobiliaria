@@ -8,6 +8,7 @@ import {
   signingUpdateSchema,
 } from "@/schemas/signing.schema";
 import { logAction } from "@/server/actions/audit-log.actions";
+import { completeSigningSlot } from "@/server/services/signing.service";
 import type { ActionResult } from "@/types/actions";
 import type { SigningStatus } from "@/types/enums";
 
@@ -126,21 +127,35 @@ export async function updateSigningStatus(
   id: string,
   status: SigningStatus
 ): Promise<ActionResult> {
-  await requirePermission("signings:manage");
+  const session = await requirePermission("signings:manage");
 
   const signing = await signingModel.findById(id);
   if (!signing) {
     return { success: false, error: "Turno de firma no encontrado" };
   }
 
-  await signingModel.updateStatus(id, status);
-
-  await logAction("SigningSlot", id, "UPDATE", {
-    oldData: { status: signing.status },
-    newData: { status },
-  });
+  try {
+    if (status === "COMPLETADA") {
+      // Route through signing service for atomic status + commission
+      await completeSigningSlot({ signingId: id, userId: session.user.id });
+    } else {
+      // Non-COMPLETADA status changes use the model directly
+      await signingModel.updateStatus(id, status);
+      await logAction("SigningSlot", id, "UPDATE", {
+        oldData: { status: signing.status },
+        newData: { status },
+      }, session.user.id);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "ServiceError") {
+      return { success: false, error: error.message };
+    }
+    console.error("Error al actualizar estado de firma:", error);
+    return { success: false, error: "Error al actualizar el estado de la firma" };
+  }
 
   revalidatePath("/firmas");
+  revalidatePath("/ventas");
   return { success: true };
 }
 
