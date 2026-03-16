@@ -15,6 +15,12 @@ import {
 } from "@/lib/constants";
 import type { InstallmentStatus, ExtraChargeStatus } from "@/types/enums";
 import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 import { Plus, Info } from "lucide-react";
 import { PayInstallmentDialog } from "./pay-installment-dialog";
 import { PayExtraChargeDialog } from "./pay-extra-charge-dialog";
@@ -53,12 +59,13 @@ interface InstallmentsTableProps {
   extraCharges: ExtraChargeRow[];
   canManage: boolean;
   saleId: string;
-  signingGateActive?: boolean;
+  signingGateActive: boolean;
 }
 
 function getInstallmentColumns(
   canManage: boolean,
-  onPay: (installment: InstallmentRow) => void
+  onPay: (installment: InstallmentRow) => void,
+  signingGateActive: boolean
 ): Column<InstallmentRow>[] {
   const columns: Column<InstallmentRow>[] = [
     {
@@ -138,6 +145,31 @@ function getInstallmentColumns(
           item.status === "PARCIAL" ||
           item.status === "VENCIDA";
         if (!canPay) return null;
+
+        if (signingGateActive) {
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="inline-block">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      className="pointer-events-none"
+                    >
+                      Pagar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Complete la firma antes de registrar pagos
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+
         return (
           <Button
             variant="outline"
@@ -156,7 +188,8 @@ function getInstallmentColumns(
 
 function getExtraChargeColumns(
   canManage: boolean,
-  onPay: (extraCharge: ExtraChargeRow) => void
+  onPay: (extraCharge: ExtraChargeRow) => void,
+  signingGateActive: boolean
 ): Column<ExtraChargeRow>[] {
   const columns: Column<ExtraChargeRow>[] = [
     {
@@ -231,6 +264,31 @@ function getExtraChargeColumns(
           item.status === "PARCIAL" ||
           item.status === "VENCIDA";
         if (!canPay) return null;
+
+        if (signingGateActive) {
+          return (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="inline-block">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                      className="pointer-events-none"
+                    >
+                      Pagar
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Complete la firma antes de registrar pagos
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          );
+        }
+
         return (
           <Button
             variant="outline"
@@ -252,6 +310,7 @@ export function InstallmentsTable({
   extraCharges,
   canManage,
   saleId,
+  signingGateActive,
 }: InstallmentsTableProps) {
   const [selectedInstallment, setSelectedInstallment] =
     useState<InstallmentRow | null>(null);
@@ -285,11 +344,13 @@ export function InstallmentsTable({
 
   const installmentColumns = getInstallmentColumns(
     canManage,
-    setSelectedInstallment
+    setSelectedInstallment,
+    signingGateActive
   );
   const extraChargeColumns = getExtraChargeColumns(
     canManage,
-    setSelectedExtraCharge
+    setSelectedExtraCharge,
+    signingGateActive
   );
 
   return (
