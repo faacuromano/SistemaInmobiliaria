@@ -59,7 +59,16 @@ The client can manage their entire real estate operation — from lot availabili
 
 <!-- Current scope. Building toward these. -->
 
-(No active milestone — run /gsd:new-milestone to start next cycle)
+## Current Milestone: v1.3 Auditoría Técnica Completa
+
+**Goal:** Produce comprehensive technical documentation of the entire codebase — 5 structured audit files that allow any developer to fully understand the system from scratch.
+
+**Target deliverables:**
+- AUDIT_CONCEPT.md — Conceptual overview, modules, interconnections, user roles
+- AUDIT_DATABASE.md — Full schema analysis, relationships, dual-currency modeling, audit trail
+- AUDIT_BACKEND.md — Every server action/endpoint documented exhaustively with step-by-step logic
+- AUDIT_FRONTEND.md — Page/route map, component tree, API connections, auth flow, UI patterns
+- AUDIT_FLOWS.md — End-to-end walkthroughs of critical business operations
 
 ### Out of Scope
 
@@ -85,7 +94,7 @@ The client can manage their entire real estate operation — from lot availabili
 - **Testing**: Vitest 4.x with jsdom, vitest-mock-extended for Prisma, expectMoney for financial precision
 - **Build status**: `tsc --noEmit` ✓, `npm run lint` ✓, `npm run build` ✓
 - **Shipped**: v1.0 Delivery Hardening (2026-02-26), v1.1 Bug Fixes & UX Polish (2026-02-26), v1.2 Integracion Firma-Venta (2026-03-16)
-- **Current milestone**: None — ready for next milestone
+- **Current milestone**: v1.3 Auditoría Técnica Completa
 
 ## Constraints
 
@@ -126,4 +135,4 @@ The client can manage their entire real estate operation — from lot availabili
 | Radix tooltip span wrapper | Disabled buttons suppress pointer events — wrap in span tabIndex={0} | ✓ Good — v1.2 |
 
 ---
-*Last updated: 2026-03-16 after v1.2 milestone complete*
+*Last updated: 2026-03-16 after v1.3 milestone start*
