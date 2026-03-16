@@ -39,7 +39,8 @@ Declared values (must be multiples of 4):
 | 2xl | 48px | Major section breaks |
 | 3xl | 64px | Page-level spacing |
 
-Exceptions: none. Existing codebase uses `space-y-3` (12px) and `space-y-4` (16px) within cards; `gap-6` (24px) for the info cards grid. New components follow these established patterns.
+Exceptions:
+- **12px (`space-y-3`):** Used inside CardContent for compact vertical stacking of label/value pairs. Established pattern across all info cards (Comprador, Lote, Detalles de Venta, Vendedor, Firma). New Firma card and FirmaManagementDialog content follow this same 12px internal spacing.
 
 ---
 
@@ -48,11 +49,21 @@ Exceptions: none. Existing codebase uses `space-y-3` (12px) and `space-y-4` (16p
 | Role | Size | Weight | Line Height | Tailwind Class |
 |------|------|--------|-------------|----------------|
 | Body | 14px | 400 (regular) | 1.5 | `text-sm` |
-| Label | 14px | 500 (medium) | 1.4 | `text-sm font-medium` |
+| Label | 14px | 600 (semibold) | 1.4 | `text-sm font-semibold` |
 | Heading (Card) | 14px | 600 (semibold) | 1.4 | `text-sm font-semibold` (via CardTitle) |
-| Display (Price) | 18px | 700 (bold) | 1.3 | `text-lg font-bold` |
+| Display (Price) | 18px | 600 (semibold) | 1.3 | `text-lg font-semibold` |
 
-Source: Extracted from existing `SaleInfoCards`, `EmptyState`, and `InstallmentsTable` components. The codebase uses `text-sm` (14px) as the dominant body size. Card titles use shadcn `CardTitle` which renders at `text-sm font-semibold`. Large numbers use `text-lg font-bold`.
+Weights used: **2** -- regular (400) for body text and descriptions, semibold (600) for labels, headings, and price displays. The `text-lg` size on Display already provides sufficient visual prominence without requiring bold (700).
+
+Source: Extracted from existing `SaleInfoCards`, `EmptyState`, and `InstallmentsTable` components, normalized to 2-weight system. Card titles use shadcn `CardTitle` which renders at `font-semibold` (600).
+
+---
+
+## Focal Point
+
+**Primary focal point:** The Firma de Escritura card on the sale detail page. When the signing gate is active, the Firma card displays a non-COMPLETADA status badge (primary blue for PENDIENTE, red for CANCELADA) while all "Pagar" buttons below become disabled with tooltips -- this combination creates a natural attention anchor directing the user to resolve the signing before attempting payments.
+
+**Secondary focal point:** The currency equivalence + coverage check section in payment dialogs. The emerald (pass) or amber (fail) colored container immediately below the amount field draws the eye to confirm payment adequacy before submitting.
 
 ---
 
