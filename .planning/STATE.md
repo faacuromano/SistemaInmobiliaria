@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Integracion Firma-Venta
-status: completed
-stopped_at: Phase 10 context gathered
-last_updated: "2026-03-16T15:02:30.332Z"
-last_activity: 2026-03-16 -- Completed phase 09 plan 02
+status: in-progress
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-03-16T20:39:03.340Z"
+last_activity: 2026-03-16 -- Completed phase 10 plan 01
 progress:
   total_phases: 3
   completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
-  percent: 67
+  total_plans: 5
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** The client can manage their entire real estate operation -- from lot availability through sale, installment collection, and cash tracking -- in one system, with every transaction auditable and every peso accounted for.
-**Current focus:** Phase 9 - Service Layer (v1.2)
+**Current focus:** Phase 10 - UI Integration (v1.2)
 
 ## Current Position
 
-Phase: 9 of 10 (Service Layer)
-Plan: 2 of 2 complete
-Status: Phase 9 complete
-Last activity: 2026-03-16 -- Completed phase 09 plan 02
+Phase: 10 of 10 (UI Integration)
+Plan: 1 of 2 complete
+Status: Executing phase 10
+Last activity: 2026-03-16 -- Completed phase 10 plan 01
 
-Progress: v1.0 [####] | v1.1 [####] | v1.2 [███████░░░] 67%
+Progress: v1.0 [####] | v1.1 [####] | v1.2 [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 2.8min
-- Total execution time: 44.3min
+- Total plans completed: 17
+- Average duration: 2.9min
+- Total execution time: 49.2min
 
 *Updated after each plan completion*
 
@@ -56,6 +56,8 @@ v1.2 pending decisions:
 - [Phase 09]: Commission uses expense fields (usdExpense/arsExpense) since commissions are company outflows
 - [Phase 09]: Seller info stored in CashMovement.notes since model has no sellerId column
 - [Phase 09]: Idempotency via findFirst(type=COMISION, saleId) prevents duplicate commissions
+- [Phase 10]: Used prisma directly in signing server actions for link/unlink/getUnlinked queries
+- [Phase 10]: Both Crear Nueva and Vincular Existente open same FirmaManagementDialog in link mode
 
 ### Pending Todos
 
@@ -69,6 +71,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T15:02:30.329Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-ui-integration/10-CONTEXT.md
+Last session: 2026-03-16T20:38:00Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: .planning/phases/10-ui-integration/10-02-PLAN.md

@@ -10,10 +10,10 @@ Requirements for Integracion Firma-Venta milestone. Each maps to roadmap phases.
 ### Firma (Signing-Sale Integration)
 
 - [x] **FIRMA-01**: Sistema vincula SigningSlot con Sale via FK nullable (saleId en SigningSlot)
-- [ ] **FIRMA-02**: Usuario puede crear una firma directamente desde el detalle de una venta
-- [ ] **FIRMA-03**: Usuario puede vincular una firma existente a una venta desde el detalle de venta
-- [ ] **FIRMA-04**: Detalle de venta muestra seccion de firma con estado actual (Por fijarse / Fijada / Completada)
-- [ ] **FIRMA-05**: Tabla de ventas muestra columna con badge de estado de firma
+- [x] **FIRMA-02**: Usuario puede crear una firma directamente desde el detalle de una venta
+- [x] **FIRMA-03**: Usuario puede vincular una firma existente a una venta desde el detalle de venta
+- [x] **FIRMA-04**: Detalle de venta muestra seccion de firma con estado actual (Por fijarse / Fijada / Completada)
+- [x] **FIRMA-05**: Tabla de ventas muestra columna con badge de estado de firma
 
 ### Pagos (Payment Gating & Exchange Rate)
 
@@ -58,10 +58,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FIRMA-01 | Phase 8 | Complete |
-| FIRMA-02 | Phase 10 | Pending |
-| FIRMA-03 | Phase 10 | Pending |
-| FIRMA-04 | Phase 10 | Pending |
-| FIRMA-05 | Phase 10 | Pending |
+| FIRMA-02 | Phase 10 | Complete |
+| FIRMA-03 | Phase 10 | Complete |
+| FIRMA-04 | Phase 10 | Complete |
+| FIRMA-05 | Phase 10 | Complete |
 | PAGO-01 | Phase 9 | Complete |
 | PAGO-02 | Phase 9 | Complete |
 | PAGO-03 | Phase 9 | Complete |
