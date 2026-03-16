@@ -25,9 +25,9 @@ Requirements for Integracion Firma-Venta milestone. Each maps to roadmap phases.
 
 ### Comision (Auto-Commission)
 
-- [ ] **COMIS-01**: Al completar firma, sistema crea automaticamente CashMovement tipo COMISION con el monto de commissionAmount de la Sale
-- [ ] **COMIS-02**: Sistema previene creacion duplicada de comision (idempotencia)
-- [ ] **COMIS-03**: Comision se registra vinculada a la venta, el vendedor y el desarrollo correspondiente
+- [x] **COMIS-01**: Al completar firma, sistema crea automaticamente CashMovement tipo COMISION con el monto de commissionAmount de la Sale
+- [x] **COMIS-02**: Sistema previene creacion duplicada de comision (idempotencia)
+- [x] **COMIS-03**: Comision se registra vinculada a la venta, el vendedor y el desarrollo correspondiente
 
 ## Future Requirements
 
@@ -67,9 +67,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PAGO-03 | Phase 9 | Complete |
 | PAGO-04 | Phase 10 | Pending |
 | PAGO-05 | Phase 10 | Pending |
-| COMIS-01 | Phase 9 | Pending |
-| COMIS-02 | Phase 9 | Pending |
-| COMIS-03 | Phase 9 | Pending |
+| COMIS-01 | Phase 9 | Complete |
+| COMIS-02 | Phase 9 | Complete |
+| COMIS-03 | Phase 9 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 13 total

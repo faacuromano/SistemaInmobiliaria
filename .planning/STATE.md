@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Integracion Firma-Venta
-status: executing
-stopped_at: Completed 09-01-PLAN.md
-last_updated: "2026-03-16T14:26:22.253Z"
-last_activity: 2026-03-16 -- Completed phase 09 plan 01
+status: completed
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-03-16T14:28:05.738Z"
+last_activity: 2026-03-16 -- Completed phase 09 plan 02
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
-  completed_plans: 2
+  completed_plans: 3
   percent: 67
 ---
 
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 9 of 10 (Service Layer)
-Plan: 1 of 2 complete
-Status: Phase 9 in progress
-Last activity: 2026-03-16 -- Completed phase 09 plan 01
+Plan: 2 of 2 complete
+Status: Phase 9 complete
+Last activity: 2026-03-16 -- Completed phase 09 plan 02
 
 Progress: v1.0 [####] | v1.1 [####] | v1.2 [███████░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
-- Average duration: 2.9min
-- Total execution time: 39.9min
+- Total plans completed: 16
+- Average duration: 2.8min
+- Total execution time: 44.3min
 
 *Updated after each plan completion*
 
@@ -53,6 +53,9 @@ v1.2 pending decisions:
 - [Phase 08]: Used db push (not migrate dev) for schema changes since project has no migration history
 - [Phase 09]: Gate check runs BEFORE transaction to fail fast and avoid unnecessary DB locks
 - [Phase 09]: Legacy sales without SigningSlot allowed through for backward compatibility
+- [Phase 09]: Commission uses expense fields (usdExpense/arsExpense) since commissions are company outflows
+- [Phase 09]: Seller info stored in CashMovement.notes since model has no sellerId column
+- [Phase 09]: Idempotency via findFirst(type=COMISION, saleId) prevents duplicate commissions
 
 ### Pending Todos
 
@@ -66,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-16T14:26:22.250Z
-Stopped at: Completed 09-01-PLAN.md
+Last session: 2026-03-16T14:27:59.795Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
