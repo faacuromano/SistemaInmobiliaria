@@ -18,6 +18,7 @@ export const signingCreateSchema = z.object({
   developmentId: z.string().optional().or(z.literal("")),
   sellerId: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
+  saleId: z.string().optional().or(z.literal("")),
 });
 
 export const signingUpdateSchema = signingCreateSchema.extend({

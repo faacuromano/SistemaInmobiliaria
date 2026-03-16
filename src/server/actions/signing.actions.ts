@@ -44,6 +44,7 @@ export async function createSigning(
     developmentId: formData.get("developmentId"),
     sellerId: formData.get("sellerId"),
     notes: formData.get("notes"),
+    saleId: formData.get("saleId"),
   };
 
   const parsed = signingCreateSchema.safeParse(raw);
@@ -62,6 +63,7 @@ export async function createSigning(
     sellerId: parsed.data.sellerId || null,
     notes: parsed.data.notes || null,
     createdById: session.user.id,
+    saleId: parsed.data.saleId || null,
   });
 
   await logAction("SigningSlot", signing.id, "CREATE", {
@@ -89,6 +91,7 @@ export async function updateSigning(
     developmentId: formData.get("developmentId"),
     sellerId: formData.get("sellerId"),
     notes: formData.get("notes"),
+    saleId: formData.get("saleId"),
     status: formData.get("status") || undefined,
   };
 
@@ -107,6 +110,7 @@ export async function updateSigning(
     developmentId: parsed.data.developmentId || null,
     sellerId: parsed.data.sellerId || null,
     notes: parsed.data.notes || null,
+    saleId: parsed.data.saleId || null,
     status: parsed.data.status,
   });
 

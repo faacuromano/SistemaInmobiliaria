@@ -30,6 +30,7 @@ export const saleModel = {
         person: { select: { id: true, firstName: true, lastName: true } },
         seller: { select: { id: true, name: true, lastName: true } },
         _count: { select: { installments: true } },
+        signingSlots: { select: { id: true, status: true } },
       },
       orderBy: { saleDate: "desc" },
     });
@@ -44,6 +45,16 @@ export const saleModel = {
         seller: { select: { id: true, name: true, lastName: true } },
         installments: { orderBy: { installmentNumber: "asc" } },
         extraCharges: { orderBy: { dueDate: "asc" } },
+        signingSlots: {
+          select: {
+            id: true,
+            date: true,
+            time: true,
+            status: true,
+            notes: true,
+          },
+          orderBy: { date: "desc" as const },
+        },
       },
     });
   },

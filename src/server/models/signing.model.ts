@@ -14,6 +14,14 @@ const includeBase = {
   development: { select: { name: true } },
   seller: { select: { name: true, lastName: true } },
   createdBy: { select: { name: true } },
+  sale: {
+    select: {
+      id: true,
+      status: true,
+      person: { select: { firstName: true, lastName: true } },
+      lot: { select: { lotNumber: true } },
+    },
+  },
 } satisfies Prisma.SigningSlotInclude;
 
 export const signingModel = {
@@ -81,6 +89,7 @@ export const signingModel = {
     sellerId?: string | null;
     notes?: string | null;
     createdById?: string | null;
+    saleId?: string | null;
   }) {
     return prisma.signingSlot.create({
       data,
@@ -101,6 +110,7 @@ export const signingModel = {
       sellerId?: string | null;
       status?: string;
       notes?: string | null;
+      saleId?: string | null;
     }
   ) {
     return prisma.signingSlot.update({
