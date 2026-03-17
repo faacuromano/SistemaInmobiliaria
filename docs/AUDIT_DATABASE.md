@@ -19,10 +19,10 @@
 |---------|-------|
 | Total de modelos | 21 |
 | Total de enums | 12 |
-| Total de indices (`@@index`) | 22 |
-| Total de constraints unicos (`@@unique`, `@unique`) | 12 |
+| Total de indices (`@@index`) | 26 |
+| Total de constraints unicos (`@@unique`, `@unique`) | 15 |
 | Total de mapeos de tabla (`@@map`) | 21 |
-| Campos financieros (`@db.Decimal`) | 24 |
+| Campos financieros (`@db.Decimal`) | 27 |
 | Campos de texto largo (`@db.Text`) | 7 |
 
 ### Agrupaciones de Dominio
@@ -1161,7 +1161,7 @@ La siguiente tabla documenta cada relacion existente en el schema con sus detall
 | AuditLog | N:1 | User | AuditLog.userId | Default | Default |
 | Person | N:1 | User (PersonCreatedBy) | Person.createdById | Default | Default |
 
-**Total de relaciones:** 31
+**Total de relaciones:** 32
 
 **Resumen de cascadas:**
 
