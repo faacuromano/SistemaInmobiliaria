@@ -15,10 +15,10 @@ Requirements for Auditoria Tecnica Completa milestone. Each maps to roadmap phas
 
 ### Base de Datos (Database Architecture)
 
-- [ ] **DB-01**: Documento describe todas las tablas/modelos con descripción campo por campo
-- [ ] **DB-02**: Documento mapea todas las relaciones (1:1, 1:N, N:M), foreign keys, indexes y constraints
-- [ ] **DB-03**: Documento explica la lógica dual USD/ARS — cómo se modela en la base de datos
-- [ ] **DB-04**: Documento detalla la implementación del audit trail (AuditLog)
+- [x] **DB-01**: Documento describe todas las tablas/modelos con descripción campo por campo
+- [x] **DB-02**: Documento mapea todas las relaciones (1:1, 1:N, N:M), foreign keys, indexes y constraints
+- [x] **DB-03**: Documento explica la lógica dual USD/ARS — cómo se modela en la base de datos
+- [x] **DB-04**: Documento detalla la implementación del audit trail (AuditLog)
 
 ### Backend (Server Actions & Business Logic)
 
@@ -71,10 +71,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONC-01 | Phase 11 | Complete |
 | CONC-02 | Phase 11 | Complete |
 | CONC-03 | Phase 11 | Complete |
-| DB-01 | Phase 12 | Pending |
-| DB-02 | Phase 12 | Pending |
-| DB-03 | Phase 12 | Pending |
-| DB-04 | Phase 12 | Pending |
+| DB-01 | Phase 12 | Complete |
+| DB-02 | Phase 12 | Complete |
+| DB-03 | Phase 12 | Complete |
+| DB-04 | Phase 12 | Complete |
 | BACK-01 | Phase 13 | Pending |
 | BACK-02 | Phase 13 | Pending |
 | BACK-03 | Phase 13 | Pending |
