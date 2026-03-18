@@ -96,11 +96,11 @@ Plans:
   3. Document covers every server action for cash movements (caja) with step-by-step logic
   4. Document covers every server action for signings, persons, users, developments, and remaining modules with step-by-step logic
   5. Every documented action includes: Zod validation, auth/role guards, business logic description, DB operations performed, and return type
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 13-01: Document ventas and pagos server actions (BACK-01, BACK-02)
-- [ ] 13-02: Document caja, firmas, personas, and remaining server actions (BACK-03, BACK-04, BACK-05)
+- [ ] 13-01-PLAN.md — Document Ventas, Pagos y Cuotas, and Caja modules (sale, payment, extra-charge, cash-movement, cash-balance, exchange-rate, lot actions + sale, payment, extra-charge, receipt services + shared utilities)
+- [ ] 13-02-PLAN.md — Document Firmas, Personas, Desarrollos, Comunicaciones, and Sistema modules (signing, person, user, development, tag, notification, message, receipt, audit-log, auth, import, RBAC, config actions + import, development, signing services + final statistics)
 
 ### Phase 14: Frontend Architecture
 **Goal**: Any developer can trace the UI — which pages exist, what components they use, which server actions they call, how auth protects routes, and what UI patterns are reused
