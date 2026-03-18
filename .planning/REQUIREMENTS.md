@@ -25,7 +25,7 @@ Requirements for Auditoria Tecnica Completa milestone. Each maps to roadmap phas
 - [x] **BACK-01**: Documento cubre TODOS los server actions del módulo ventas con lógica paso a paso
 - [x] **BACK-02**: Documento cubre TODOS los server actions de pagos/cuotas/refuerzos con lógica paso a paso
 - [x] **BACK-03**: Documento cubre TODOS los server actions de caja/movimientos con lógica paso a paso
-- [ ] **BACK-04**: Documento cubre TODOS los server actions de firmas/personas/usuarios/desarrollos
+- [x] **BACK-04**: Documento cubre TODOS los server actions de firmas/personas/usuarios/desarrollos
 - [x] **BACK-05**: Cada server action documentado incluye: validación, guards, lógica de negocio, operaciones DB, respuesta
 
 ### Frontend (Architecture & Components)
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BACK-01 | Phase 13 | Complete |
 | BACK-02 | Phase 13 | Complete |
 | BACK-03 | Phase 13 | Complete |
-| BACK-04 | Phase 13 | Pending |
+| BACK-04 | Phase 13 | Complete |
 | BACK-05 | Phase 13 | Complete |
 | FRONT-01 | Phase 14 | Pending |
 | FRONT-02 | Phase 14 | Pending |
