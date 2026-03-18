@@ -111,10 +111,11 @@ Plans:
   2. Document maps each page to the specific server actions it consumes (cross-referenced with AUDIT_BACKEND.md)
   3. Document describes the auth flow — Auth.js v5 setup, session handling, route protection middleware, and role-based UI gating
   4. Document catalogs reusable UI patterns — shared components, dialog patterns, form patterns, table patterns used across pages
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: Write AUDIT_FRONTEND.md covering route map, component tree, action connections, auth flow, and UI patterns
+- [ ] 14-01-PLAN.md — Document route map, component trees for all 11 modules, Auth.js v5 flow, and UI patterns catalog
+- [ ] 14-02-PLAN.md — Document page-to-server-action mappings cross-referenced with AUDIT_BACKEND.md, plus summary statistics
 
 ### Phase 15: Business Flows
 **Goal**: A developer can follow any critical business operation end-to-end across all layers — from user click through frontend, server action, database, and back
@@ -153,5 +154,5 @@ Wave 3: Phase 15 (after 12, 13, 14)
 | 11. Conceptual Overview | 1/1 | Complete    | 2026-03-16 | - |
 | 12. Database Architecture | 1/1 | Complete    | 2026-03-17 | - |
 | 13. Backend Audit | 2/2 | Complete    | 2026-03-18 | - |
-| 14. Frontend Architecture | v1.3 | 0/1 | Not started | - |
+| 14. Frontend Architecture | v1.3 | 0/2 | Not started | - |
 | 15. Business Flows | v1.3 | 0/1 | Not started | - |
