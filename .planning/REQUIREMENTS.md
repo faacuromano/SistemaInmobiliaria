@@ -22,11 +22,11 @@ Requirements for Auditoria Tecnica Completa milestone. Each maps to roadmap phas
 
 ### Backend (Server Actions & Business Logic)
 
-- [ ] **BACK-01**: Documento cubre TODOS los server actions del módulo ventas con lógica paso a paso
-- [ ] **BACK-02**: Documento cubre TODOS los server actions de pagos/cuotas/refuerzos con lógica paso a paso
-- [ ] **BACK-03**: Documento cubre TODOS los server actions de caja/movimientos con lógica paso a paso
+- [x] **BACK-01**: Documento cubre TODOS los server actions del módulo ventas con lógica paso a paso
+- [x] **BACK-02**: Documento cubre TODOS los server actions de pagos/cuotas/refuerzos con lógica paso a paso
+- [x] **BACK-03**: Documento cubre TODOS los server actions de caja/movimientos con lógica paso a paso
 - [ ] **BACK-04**: Documento cubre TODOS los server actions de firmas/personas/usuarios/desarrollos
-- [ ] **BACK-05**: Cada server action documentado incluye: validación, guards, lógica de negocio, operaciones DB, respuesta
+- [x] **BACK-05**: Cada server action documentado incluye: validación, guards, lógica de negocio, operaciones DB, respuesta
 
 ### Frontend (Architecture & Components)
 
@@ -75,11 +75,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-02 | Phase 12 | Complete |
 | DB-03 | Phase 12 | Complete |
 | DB-04 | Phase 12 | Complete |
-| BACK-01 | Phase 13 | Pending |
-| BACK-02 | Phase 13 | Pending |
-| BACK-03 | Phase 13 | Pending |
+| BACK-01 | Phase 13 | Complete |
+| BACK-02 | Phase 13 | Complete |
+| BACK-03 | Phase 13 | Complete |
 | BACK-04 | Phase 13 | Pending |
-| BACK-05 | Phase 13 | Pending |
+| BACK-05 | Phase 13 | Complete |
 | FRONT-01 | Phase 14 | Pending |
 | FRONT-02 | Phase 14 | Pending |
 | FRONT-03 | Phase 14 | Pending |
