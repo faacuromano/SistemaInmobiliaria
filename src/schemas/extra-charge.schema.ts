@@ -31,3 +31,5 @@ export const extraChargeUpdateSchema = z.object({
 
 export type ExtraChargeCreateInput = z.input<typeof extraChargeCreateSchema>;
 export type ExtraChargeUpdateInput = z.input<typeof extraChargeUpdateSchema>;
+export type ExtraChargeCreateData = z.output<typeof extraChargeCreateSchema>;
+export type ExtraChargeUpdateData = z.output<typeof extraChargeUpdateSchema>;

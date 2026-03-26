@@ -8,6 +8,8 @@ import { getCashMovementsBySale } from "@/server/actions/cash-movement.actions";
 import { getPaymentReceipts } from "@/server/actions/payment-receipt.actions";
 import { getDevelopmentOptions } from "@/server/actions/development.actions";
 import { getActiveSellers } from "@/server/actions/user.actions";
+import { getActiveBankAccounts } from "@/server/actions/bank-account.actions";
+import { getPersons } from "@/server/actions/person.actions";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +24,7 @@ import { InstallmentsTable } from "./_components/installments-table";
 import { SaleActions } from "./_components/sale-actions";
 import { SaleMovements } from "./_components/sale-movements";
 import { ReceiptsSection } from "./_components/receipts-section";
+import { TransferHistory } from "./_components/transfer-history";
 import { SalePrintButton } from "./_components/sale-print-button";
 
 interface Props {
@@ -32,12 +35,14 @@ export default async function SaleDetailPage({ params }: Props) {
   const session = await requirePermission("sales:view");
   const { id } = await params;
 
-  const [sale, movements, receipts, developments, sellersRaw] = await Promise.all([
+  const [sale, movements, receipts, developments, sellersRaw, bankAccounts, personsRaw] = await Promise.all([
     getSaleById(id),
     getCashMovementsBySale(id),
     getPaymentReceipts({ saleId: id }),
     getDevelopmentOptions(),
     getActiveSellers(),
+    getActiveBankAccounts(),
+    getPersons({ isActive: true }),
   ]);
 
   if (!sale) notFound();
@@ -93,8 +98,23 @@ export default async function SaleDetailPage({ params }: Props) {
         extraCharges={sale.extraCharges}
         canManage={canManage}
         saleId={sale.id}
+        saleStatus={sale.status}
+        saleCurrency={sale.currency as "USD" | "ARS"}
+        saleTotalPrice={sale.totalPrice}
+        salePaidTotal={
+          (sale.downPayment ?? 0) +
+          sale.installments
+            .filter((i: { status: string }) => i.status === "PAGADA")
+            .reduce((sum: number, i: { amount: number }) => sum + i.amount, 0) +
+          sale.extraCharges
+            .filter((ec: { status: string }) => ec.status === "PAGADA")
+            .reduce((sum: number, ec: { amount: number }) => sum + ec.amount, 0)
+        }
         signingGateActive={!!signingGateActive}
+        bankAccounts={bankAccounts}
       />
+
+      <TransferHistory saleId={sale.id} />
 
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <SaleMovements movements={movements as any} />
@@ -103,7 +123,17 @@ export default async function SaleDetailPage({ params }: Props) {
       <ReceiptsSection receipts={receipts as any} canManage={canManage} />
 
       {canManage && (
-        <SaleActions saleId={sale.id} saleStatus={sale.status} />
+        <SaleActions
+          saleId={sale.id}
+          saleStatus={sale.status}
+          currentPersonName={`${sale.person.firstName} ${sale.person.lastName}`}
+          persons={personsRaw.map((p) => ({
+            id: p.id,
+            firstName: p.firstName,
+            lastName: p.lastName,
+            dni: p.dni,
+          }))}
+        />
       )}
     </div>
   );

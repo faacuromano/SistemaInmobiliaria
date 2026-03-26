@@ -59,7 +59,7 @@ export default async function DashboardLayout({
       <CurrencyProvider blueSellRate={rates?.blueSell ?? null}>
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* ── Top bar ──────────────────────────────────── */}
-          <header className="flex h-11 shrink-0 items-center border-b bg-card/80 backdrop-blur-sm px-4 gap-2">
+          <header className="glass-strong flex h-12 shrink-0 items-center border-b border-white/30 px-5 gap-2">
             <MobileSidebar
               userRole={session.user.role}
               userName={session.user.name ?? ""}
@@ -73,7 +73,7 @@ export default async function DashboardLayout({
             />
           </header>
           {/* ── Content area ─────────────────────────────── */}
-          <main className="flex-1 overflow-auto bg-background p-4 lg:p-5">
+          <main className="flex-1 overflow-auto bg-background p-5 lg:p-6">
             {children}
           </main>
         </div>

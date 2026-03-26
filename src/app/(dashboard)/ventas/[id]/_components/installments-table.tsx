@@ -15,16 +15,11 @@ import {
 } from "@/lib/constants";
 import type { InstallmentStatus, ExtraChargeStatus } from "@/types/enums";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
-import { Plus, Info } from "lucide-react";
+import { Plus, Info, CalendarPlus, AlertTriangle } from "lucide-react";
 import { PayInstallmentDialog } from "./pay-installment-dialog";
 import { PayExtraChargeDialog } from "./pay-extra-charge-dialog";
 import { AddExtraChargeDialog } from "./add-extra-charge-dialog";
+import { NewInstallmentPlanDialog } from "./new-installment-plan-dialog";
 
 interface InstallmentRow {
   id: string;
@@ -59,7 +54,12 @@ interface InstallmentsTableProps {
   extraCharges: ExtraChargeRow[];
   canManage: boolean;
   saleId: string;
+  saleStatus?: string;
+  saleCurrency?: "USD" | "ARS";
+  saleTotalPrice?: number;
+  salePaidTotal?: number;
   signingGateActive: boolean;
+  bankAccounts?: Array<{ id: string; name: string }>;
 }
 
 function getInstallmentColumns(
@@ -145,30 +145,6 @@ function getInstallmentColumns(
           item.status === "PARCIAL" ||
           item.status === "VENCIDA";
         if (!canPay) return null;
-
-        if (signingGateActive) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-block">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled
-                      className="pointer-events-none"
-                    >
-                      Pagar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Complete la firma antes de registrar pagos
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
 
         return (
           <Button
@@ -265,30 +241,6 @@ function getExtraChargeColumns(
           item.status === "VENCIDA";
         if (!canPay) return null;
 
-        if (signingGateActive) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-block">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled
-                      className="pointer-events-none"
-                    >
-                      Pagar
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  Complete la firma antes de registrar pagos
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-
         return (
           <Button
             variant="outline"
@@ -310,13 +262,19 @@ export function InstallmentsTable({
   extraCharges,
   canManage,
   saleId,
+  saleStatus,
+  saleCurrency = "USD",
+  saleTotalPrice = 0,
+  salePaidTotal = 0,
   signingGateActive,
+  bankAccounts = [],
 }: InstallmentsTableProps) {
   const [selectedInstallment, setSelectedInstallment] =
     useState<InstallmentRow | null>(null);
   const [selectedExtraCharge, setSelectedExtraCharge] =
     useState<ExtraChargeRow | null>(null);
   const [showAddExtraCharge, setShowAddExtraCharge] = useState(false);
+  const [showNewPlan, setShowNewPlan] = useState(false);
 
   // Compute summary stats
   const paidCount = installments.filter((i) => i.status === "PAGADA").length;
@@ -361,9 +319,22 @@ export function InstallmentsTable({
           <CardTitle>Cuotas ({installments.length})</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Signing warning */}
+          {signingGateActive && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-medium">Firma pendiente</p>
+                <p className="text-xs mt-0.5">
+                  La firma de escritura de esta venta aun no fue completada. Puede registrar pagos, pero tenga en cuenta esta situacion.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Summary bar */}
           {installments.length > 0 && (
-            <div className="flex flex-wrap gap-3 rounded-md border bg-card p-3 shadow-sm">
+            <div className="flex flex-wrap gap-3 rounded-xl border bg-card p-4 shadow-sm">
               <div className="flex items-center gap-1.5">
                 <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 <span className="text-sm">
@@ -405,6 +376,32 @@ export function InstallmentsTable({
             emptyTitle="Sin cuotas"
             emptyDescription="Esta venta no tiene cuotas generadas."
           />
+
+          {/* Create new installment plan — show when sale is ACTIVA with no pending installments */}
+          {canManage &&
+            saleStatus === "ACTIVA" &&
+            pendingCount === 0 &&
+            parcialCount === 0 &&
+            overdueCount === 0 && (
+              <div className="rounded-md border border-dashed p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">
+                    No hay cuotas pendientes
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Puede crear un nuevo plan de cuotas para esta venta
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNewPlan(true)}
+                >
+                  <CalendarPlus className="mr-1 h-4 w-4" />
+                  Nuevo Plan de Cuotas
+                </Button>
+              </div>
+            )}
 
           {/* Adjustment explanation */}
           {hasAdjustedInstallments && (
@@ -472,6 +469,7 @@ export function InstallmentsTable({
             if (!open) setSelectedInstallment(null);
           }}
           installment={selectedInstallment}
+          bankAccounts={bankAccounts}
         />
       )}
 
@@ -482,6 +480,7 @@ export function InstallmentsTable({
             if (!open) setSelectedExtraCharge(null);
           }}
           extraCharge={selectedExtraCharge}
+          bankAccounts={bankAccounts}
         />
       )}
 
@@ -492,6 +491,16 @@ export function InstallmentsTable({
           saleId={saleId}
           remainingBalance={remainingBalance}
           saleCurrency={(installments[0]?.currency ?? "USD") as "USD" | "ARS"}
+        />
+      )}
+
+      {canManage && (
+        <NewInstallmentPlanDialog
+          open={showNewPlan}
+          onOpenChange={setShowNewPlan}
+          saleId={saleId}
+          remainingBalance={saleTotalPrice - salePaidTotal}
+          currency={saleCurrency}
         />
       )}
     </div>

@@ -44,9 +44,25 @@ function formatAmount(value: unknown): string {
  * notifications for Installments to avoid duplicates.
  */
 export async function GET(request: Request) {
-  // ── Auth check ──────────────────────────────────────────────────────────
-  const authHeader = request.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // ── Auth check (timing-safe to prevent side-channel attacks) ───────────
+  const authHeader = request.headers.get("authorization") || "";
+  const providedSecret = authHeader.replace("Bearer ", "");
+  const expectedSecret = process.env.CRON_SECRET || "";
+
+  let authorized = false;
+  try {
+    if (providedSecret.length > 0 && providedSecret.length === expectedSecret.length) {
+      const { timingSafeEqual } = await import("crypto");
+      authorized = timingSafeEqual(
+        Buffer.from(providedSecret),
+        Buffer.from(expectedSecret)
+      );
+    }
+  } catch {
+    authorized = false;
+  }
+
+  if (!authorized) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

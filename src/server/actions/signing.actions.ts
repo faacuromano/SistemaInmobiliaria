@@ -2,14 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
-import { prisma } from "@/lib/prisma";
+import { ServiceError } from "@/lib/service-error";
 import { signingModel } from "@/server/models/signing.model";
 import {
   signingCreateSchema,
   signingUpdateSchema,
 } from "@/schemas/signing.schema";
-import { logAction } from "@/server/actions/audit-log.actions";
-import { completeSigningSlot } from "@/server/services/signing.service";
+import * as signingService from "@/server/services/signing.service";
 import type { ActionResult } from "@/types/actions";
 import type { SigningStatus } from "@/types/enums";
 
@@ -54,36 +53,39 @@ export async function createSigning(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  const signing = await signingModel.create({
-    date: new Date(parsed.data.date),
-    time: parsed.data.time,
-    endTime: parsed.data.endTime || null,
-    lotInfo: parsed.data.lotInfo,
-    clientName: parsed.data.clientName || null,
-    lotNumbers: parsed.data.lotNumbers || null,
-    developmentId: parsed.data.developmentId || null,
-    sellerId: parsed.data.sellerId || null,
-    notes: parsed.data.notes || null,
-    createdById: session.user.id,
-    saleId: parsed.data.saleId || null,
-  });
+  try {
+    await signingService.createSigning(
+      {
+        date: new Date(parsed.data.date),
+        time: parsed.data.time,
+        endTime: parsed.data.endTime || null,
+        lotInfo: parsed.data.lotInfo,
+        clientName: parsed.data.clientName || null,
+        lotNumbers: parsed.data.lotNumbers || null,
+        developmentId: parsed.data.developmentId || null,
+        sellerId: parsed.data.sellerId || null,
+        notes: parsed.data.notes || null,
+        saleId: parsed.data.saleId || null,
+      },
+      session.user.id
+    );
 
-  await logAction("SigningSlot", signing.id, "CREATE", {
-    newData: { date: parsed.data.date, time: parsed.data.time, lotInfo: parsed.data.lotInfo, saleId: parsed.data.saleId },
-  }, session.user.id);
-
-  revalidatePath("/firmas");
-  if (parsed.data.saleId) {
-    revalidatePath("/ventas");
+    revalidatePath("/firmas");
+    if (parsed.data.saleId) revalidatePath("/ventas");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al crear el turno de firma" };
   }
-  return { success: true };
 }
 
 export async function updateSigning(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("signings:manage");
+  const session = await requirePermission("signings:manage");
 
   const raw = {
     id: formData.get("id"),
@@ -105,29 +107,34 @@ export async function updateSigning(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  await signingModel.update(parsed.data.id, {
-    date: new Date(parsed.data.date),
-    time: parsed.data.time,
-    endTime: parsed.data.endTime || null,
-    lotInfo: parsed.data.lotInfo,
-    clientName: parsed.data.clientName || null,
-    lotNumbers: parsed.data.lotNumbers || null,
-    developmentId: parsed.data.developmentId || null,
-    sellerId: parsed.data.sellerId || null,
-    notes: parsed.data.notes || null,
-    saleId: parsed.data.saleId || null,
-    status: parsed.data.status,
-  });
+  try {
+    await signingService.updateSigning(
+      parsed.data.id,
+      {
+        date: new Date(parsed.data.date),
+        time: parsed.data.time,
+        endTime: parsed.data.endTime || null,
+        lotInfo: parsed.data.lotInfo,
+        clientName: parsed.data.clientName || null,
+        lotNumbers: parsed.data.lotNumbers || null,
+        developmentId: parsed.data.developmentId || null,
+        sellerId: parsed.data.sellerId || null,
+        notes: parsed.data.notes || null,
+        saleId: parsed.data.saleId || null,
+        status: parsed.data.status,
+      },
+      session.user.id
+    );
 
-  await logAction("SigningSlot", parsed.data.id, "UPDATE", {
-    newData: { date: parsed.data.date, time: parsed.data.time, lotInfo: parsed.data.lotInfo, status: parsed.data.status },
-  });
-
-  revalidatePath("/firmas");
-  if (parsed.data.saleId) {
-    revalidatePath("/ventas");
+    revalidatePath("/firmas");
+    if (parsed.data.saleId) revalidatePath("/ventas");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al actualizar el turno de firma" };
   }
-  return { success: true };
 }
 
 export async function updateSigningStatus(
@@ -136,77 +143,46 @@ export async function updateSigningStatus(
 ): Promise<ActionResult> {
   const session = await requirePermission("signings:manage");
 
-  const signing = await signingModel.findById(id);
-  if (!signing) {
-    return { success: false, error: "Turno de firma no encontrado" };
-  }
-
   try {
-    if (status === "COMPLETADA") {
-      // Route through signing service for atomic status + commission
-      await completeSigningSlot({ signingId: id, userId: session.user.id });
-    } else {
-      // Non-COMPLETADA status changes use the model directly
-      await signingModel.updateStatus(id, status);
-      await logAction("SigningSlot", id, "UPDATE", {
-        oldData: { status: signing.status },
-        newData: { status },
-      }, session.user.id);
-    }
+    await signingService.updateSigningStatus(id, status, session.user.id);
+    revalidatePath("/firmas");
+    revalidatePath("/ventas");
+    return { success: true };
   } catch (error) {
-    if (error instanceof Error && error.name === "ServiceError") {
+    if (error instanceof ServiceError) {
       return { success: false, error: error.message };
     }
-    console.error("Error al actualizar estado de firma:", error);
     return { success: false, error: "Error al actualizar el estado de la firma" };
   }
-
-  revalidatePath("/firmas");
-  revalidatePath("/ventas");
-  return { success: true };
 }
 
 export async function getSigningsByWeek(weekStart: string) {
   await requirePermission("signings:view");
   const from = new Date(weekStart);
   const to = new Date(weekStart);
-  to.setDate(to.getDate() + 6); // Mon-Sun (full week)
+  to.setDate(to.getDate() + 6);
   to.setHours(23, 59, 59, 999);
   return signingModel.findByDateRange(from, to);
 }
 
 export async function deleteSigning(id: string): Promise<ActionResult> {
-  await requirePermission("signings:manage");
+  const session = await requirePermission("signings:manage");
 
-  const signing = await signingModel.findById(id);
-  if (!signing) {
-    return { success: false, error: "Turno de firma no encontrado" };
+  try {
+    await signingService.deleteSigning(id, session.user.id);
+    revalidatePath("/firmas");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al eliminar el turno de firma" };
   }
-
-  await signingModel.delete(id);
-
-  await logAction("SigningSlot", id, "DELETE", {
-    oldData: { lotInfo: signing.lotInfo, date: signing.date, time: signing.time },
-  });
-
-  revalidatePath("/firmas");
-  return { success: true };
 }
 
 export async function getUnlinkedSignings(developmentId: string) {
   await requirePermission("signings:view");
-  return prisma.signingSlot.findMany({
-    where: { saleId: null, developmentId },
-    select: {
-      id: true,
-      clientName: true,
-      lotInfo: true,
-      date: true,
-      time: true,
-      status: true,
-    },
-    orderBy: { date: "desc" },
-  });
+  return signingService.getUnlinkedSignings(developmentId);
 }
 
 export async function unlinkSigningFromSale(
@@ -214,30 +190,17 @@ export async function unlinkSigningFromSale(
 ): Promise<ActionResult> {
   const session = await requirePermission("signings:manage");
 
-  const signing = await signingModel.findById(signingId);
-  if (!signing) {
-    return { success: false, error: "Turno de firma no encontrado" };
+  try {
+    await signingService.unlinkSigningFromSale(signingId, session.user.id);
+    revalidatePath("/firmas");
+    revalidatePath("/ventas");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al desvincular la firma" };
   }
-
-  await prisma.signingSlot.update({
-    where: { id: signingId },
-    data: { saleId: null },
-  });
-
-  await logAction(
-    "SigningSlot",
-    signingId,
-    "UPDATE",
-    {
-      oldData: { saleId: signing.saleId },
-      newData: { saleId: null },
-    },
-    session.user.id
-  );
-
-  revalidatePath("/firmas");
-  revalidatePath("/ventas");
-  return { success: true };
 }
 
 export async function linkSigningToSale(
@@ -246,28 +209,15 @@ export async function linkSigningToSale(
 ): Promise<ActionResult> {
   const session = await requirePermission("signings:manage");
 
-  const signing = await signingModel.findById(signingId);
-  if (!signing) {
-    return { success: false, error: "Turno de firma no encontrado" };
+  try {
+    await signingService.linkSigningToSale(signingId, saleId, session.user.id);
+    revalidatePath("/firmas");
+    revalidatePath("/ventas");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al vincular la firma" };
   }
-
-  await prisma.signingSlot.update({
-    where: { id: signingId },
-    data: { saleId },
-  });
-
-  await logAction(
-    "SigningSlot",
-    signingId,
-    "UPDATE",
-    {
-      oldData: { saleId: signing.saleId },
-      newData: { saleId },
-    },
-    session.user.id
-  );
-
-  revalidatePath("/firmas");
-  revalidatePath("/ventas");
-  return { success: true };
 }

@@ -471,7 +471,7 @@ export default async function EstadisticasPage({ searchParams }: Props) {
     : 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
         title="Estadisticas"
         description={`Metricas y analisis del periodo ${selectedYear}`}
@@ -502,23 +502,23 @@ export default async function EstadisticasPage({ searchParams }: Props) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-5">
-              <div className="rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-2xl font-bold">{totalSalesCount}</p>
-                <p className="text-sm text-muted-foreground">Total Ventas</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border bg-card p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground">Total Ventas</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">{totalSalesCount}</p>
               </div>
-              <div className="rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-2xl font-bold">
+              <div className="rounded-xl border bg-card p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground">Valor Total</p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">
                   {formatCurrency(totalSalesValue, "USD")}
                 </p>
-                <p className="text-sm text-muted-foreground">Valor Total</p>
               </div>
-              <div className="col-span-2 rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-2xl font-bold">
-                  {formatCurrency(avgSalePrice, "USD")}
-                </p>
-                <p className="text-sm text-muted-foreground">
+              <div className="col-span-2 rounded-xl border bg-card p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground">
                   Precio Promedio por Venta
+                </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">
+                  {formatCurrency(avgSalePrice, "USD")}
                 </p>
               </div>
             </div>
@@ -617,54 +617,54 @@ export default async function EstadisticasPage({ searchParams }: Props) {
             </div>
 
             {/* Breakdown grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-2xl font-bold">{installmentsTotal}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-xl border bg-card p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1">
                   Cuotas programadas en {selectedYear}
                   <CollectionHelpTooltip text="Total de cuotas generadas para todas las ventas activas durante este ano, independientemente de si ya vencieron o no." />
                 </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">{installmentsTotal}</p>
               </div>
-              <div className="rounded-md border bg-card p-3 shadow-sm">
-                <p className="text-2xl font-bold">{installmentsDueToDate}</p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <div className="rounded-xl border bg-card p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1">
                   Ya vencidas (hasta hoy)
                   <CollectionHelpTooltip text="Cuotas cuya fecha de vencimiento ya paso. Incluye pagadas, parciales e impagas." />
                 </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight">{installmentsDueToDate}</p>
               </div>
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-fluent dark:border-emerald-900 dark:bg-emerald-950">
-                <p className="text-2xl font-bold text-emerald-600">
-                  {installmentsPaidToDate}
-                </p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1">
                   Cobradas (de vencidas)
                   <CollectionHelpTooltip text="Cuotas vencidas que fueron pagadas en su totalidad (estado PAGADA). No incluye pagos parciales ni pagos anticipados de cuotas futuras." />
                 </p>
-              </div>
-              <div className="rounded-lg border border-red-200 bg-red-50 p-4 shadow-fluent dark:border-red-900 dark:bg-red-950">
-                <p className="text-2xl font-bold text-red-600">
-                  {overdueCount}
+                <p className="mt-1 text-3xl font-bold tracking-tight text-emerald-600">
+                  {installmentsPaidToDate}
                 </p>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
+              </div>
+              <div className="rounded-xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1">
                   Impagas / vencidas
                   <CollectionHelpTooltip text="Cuotas vencidas que no se pagaron o se pagaron parcialmente. Incluye estados PENDIENTE, VENCIDA y PARCIAL." />
                 </p>
+                <p className="mt-1 text-3xl font-bold tracking-tight text-red-600">
+                  {overdueCount}
+                </p>
               </div>
               {paidInAdvance > 0 && (
-                <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 shadow-fluent dark:border-blue-900 dark:bg-blue-950 col-span-2">
-                  <p className="text-2xl font-bold text-blue-600">
-                    {paidInAdvance}
-                  </p>
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <div className="col-span-2 rounded-xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+                  <p className="text-[13px] font-medium text-muted-foreground flex items-center gap-1">
                     Pagadas por anticipado
                     <CollectionHelpTooltip text="Cuotas cuya fecha de vencimiento es futura pero ya fueron pagadas. Indica pagos adelantados por parte del comprador." />
+                  </p>
+                  <p className="mt-1 text-3xl font-bold tracking-tight text-blue-600">
+                    {paidInAdvance}
                   </p>
                 </div>
               )}
             </div>
 
             {/* Detail metrics */}
-            <div className="space-y-2 rounded-md border bg-card p-3 shadow-sm">
+            <div className="space-y-2 rounded-xl border bg-card p-5 shadow-sm">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   Total pagadas en {selectedYear}

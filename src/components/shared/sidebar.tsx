@@ -26,27 +26,27 @@ export function Sidebar({ userRole, userName, permissions, className, onNavigate
     permissions.includes("*");
 
   return (
-    <aside className={cn("flex w-56 shrink-0 flex-col border-r bg-sidebar", className)}>
+    <aside className={cn("flex w-60 shrink-0 flex-col border-r bg-sidebar", className)}>
       {/* ── App branding ──────────────────────────────── */}
-      <div className="flex items-center gap-2.5 px-4 py-3">
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
+      <div className="flex items-center gap-3 px-5 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
           <Building2 className="h-4 w-4 text-primary-foreground" />
         </div>
-        <p className="text-sm font-semibold leading-tight">Sistema Inmobiliaria</p>
+        <p className="text-[15px] font-bold tracking-tight">Sistema Inmobiliaria</p>
       </div>
 
       {/* ── Navigation groups ─────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto px-2 py-1">
+      <nav className="flex-1 overflow-y-auto px-3 py-2">
         {navigation
           .filter((group) =>
             group.items.some((item) => hasAccess(item.permission))
           )
           .map((group, groupIndex) => (
-            <div key={group.label} className={cn(groupIndex > 0 && "mt-4")}>
-              <p className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <div key={group.label} className={cn(groupIndex > 0 && "mt-5")}>
+              <p className="mb-1.5 px-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
                 {group.label}
               </p>
-              <div className="space-y-px">
+              <div className="space-y-0.5">
                 {group.items
                   .filter((item) => hasAccess(item.permission))
                   .map((item) => {
@@ -61,22 +61,22 @@ export function Sidebar({ userRole, userName, permissions, className, onNavigate
                         href={item.href}
                         onClick={onNavigate}
                         className={cn(
-                          "group relative flex h-8 items-center gap-2.5 rounded-md px-2.5 text-[13px] font-medium transition-colors duration-75",
+                          "group relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13px] font-medium transition-colors duration-75",
                           isActive
                             ? "bg-primary/10 text-primary font-semibold"
-                            : "text-foreground/70 hover:bg-accent hover:text-foreground"
+                            : "text-foreground/65 hover:bg-accent hover:text-foreground"
                         )}
                       >
                         {/* Active indicator bar */}
                         <span
                           className={cn(
-                            "absolute left-0 top-1/2 h-3.5 w-[3px] -translate-y-1/2 rounded-full bg-primary transition-opacity duration-150",
+                            "absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-full bg-primary transition-opacity duration-150",
                             isActive ? "opacity-100" : "opacity-0"
                           )}
                         />
                         <item.icon
                           className={cn(
-                            "h-4 w-4 shrink-0",
+                            "h-[18px] w-[18px] shrink-0",
                             isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
                           )}
                         />
@@ -90,23 +90,23 @@ export function Sidebar({ userRole, userName, permissions, className, onNavigate
       </nav>
 
       {/* ── User section ──────────────────────────────── */}
-      <div className="border-t px-2 py-2">
-        <div className="flex items-center gap-2.5 rounded-md px-2.5 py-2 hover:bg-accent/50 transition-colors">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+      <div className="border-t px-3 py-3">
+        <div className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-accent/50 transition-colors">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-medium">{userName}</p>
-            <p className="text-[10px] text-muted-foreground">{userRole}</p>
+            <p className="truncate text-[13px] font-semibold">{userName}</p>
+            <p className="text-[11px] text-muted-foreground">{userRole}</p>
           </div>
         </div>
         <form action={logoutAction} className="mt-1 px-0.5">
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-full justify-start gap-2.5 px-2.5 text-[13px] text-muted-foreground hover:text-foreground"
+            className="h-9 w-full justify-start gap-3 rounded-lg px-3 text-[13px] text-muted-foreground hover:text-foreground"
           >
-            <LogOut className="h-3.5 w-3.5" />
+            <LogOut className="h-4 w-4" />
             Cerrar Sesion
           </Button>
         </form>

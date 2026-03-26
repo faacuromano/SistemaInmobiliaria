@@ -28,7 +28,7 @@ export default async function MensajesPage() {
   const unreadCount = received.filter((r) => !r.readAt).length;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
         title="Mensajes"
         description="Mensajeria interna entre usuarios del sistema"
@@ -38,14 +38,14 @@ export default async function MensajesPage() {
         <MessageComposeDialog users={otherUsers} />
       </PageHeader>
 
-      <div className="grid grid-cols-2 gap-5">
-        <div className="rounded-md border bg-card p-3 shadow-sm">
-          <p className="text-sm text-muted-foreground">Recibidos</p>
-          <p className="text-2xl font-bold">{received.length}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <p className="text-[13px] font-medium text-muted-foreground">Recibidos</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight">{received.length}</p>
         </div>
-        <div className="rounded-md border bg-card p-3 shadow-sm">
-          <p className="text-sm text-muted-foreground">Sin leer</p>
-          <p className="text-2xl font-bold">{unreadCount}</p>
+        <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <p className="text-[13px] font-medium text-muted-foreground">Sin leer</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight">{unreadCount}</p>
         </div>
       </div>
 

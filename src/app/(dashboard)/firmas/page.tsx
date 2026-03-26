@@ -1,8 +1,9 @@
 import { requirePermission } from "@/lib/auth-guard";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import { getSignings, getSigningsByWeek } from "@/server/actions/signing.actions";
 import { getBusinessHours } from "@/server/actions/business-hours.actions";
-import { getDevelopments } from "@/server/actions/development.actions";
+import { getDevelopmentOptions } from "@/server/actions/development.actions";
 import { getActiveSellers } from "@/server/actions/user.actions";
 import { FileSignature } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
@@ -17,6 +18,13 @@ interface Props {
     dateFrom?: string;
     dateTo?: string;
     week?: string;
+    // Auto-create from sale detail page
+    newSigning?: string;
+    saleId?: string;
+    clientName?: string;
+    lotInfo?: string;
+    lotNumbers?: string;
+    sellerId?: string;
   }>;
 }
 
@@ -49,17 +57,14 @@ export default async function FirmasPage({ searchParams }: Props) {
     }),
     // Fetch week signings for calendar view
     getSigningsByWeek(weekStart),
-    getDevelopments(),
+    getDevelopmentOptions(),
     getActiveSellers(),
     getBusinessHours(),
   ]);
 
-  const canManage = hasPermission(session.user.role, "signings:manage");
+  const canManage = await checkPermissionDb(session.user.role as Role, "signings:manage");
 
-  const developmentOptions = developments.map((d) => ({
-    id: d.id,
-    name: d.name,
-  }));
+  const developmentOptions = developments;
 
   const sellerOptions = sellers.map((s) => ({
     id: s.id,
@@ -67,7 +72,7 @@ export default async function FirmasPage({ searchParams }: Props) {
   }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader title="Firmas" description="Agenda de escrituraciones" icon={FileSignature} accentColor="border-rose-600">
         {canManage && (
           <SigningsActions
@@ -84,6 +89,18 @@ export default async function FirmasPage({ searchParams }: Props) {
         sellers={sellerOptions}
         initialWeekStart={weekStart}
         businessHours={businessHours}
+        saleContext={
+          params.newSigning === "1" && params.saleId
+            ? {
+                saleId: params.saleId,
+                clientName: params.clientName ?? "",
+                lotInfo: params.lotInfo ?? "",
+                lotNumbers: params.lotNumbers ?? "",
+                developmentId: params.developmentId ?? "",
+                sellerId: params.sellerId ?? "",
+              }
+            : undefined
+        }
       />
     </div>
   );

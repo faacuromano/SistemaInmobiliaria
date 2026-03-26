@@ -2,8 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
+import { ServiceError } from "@/lib/service-error";
 import { tagModel } from "@/server/models/tag.model";
-import { tagCreateSchema, tagUpdateSchema, lotTagsSchema, labelToName } from "@/schemas/tag.schema";
+import { tagCreateSchema, tagUpdateSchema, lotTagsSchema } from "@/schemas/tag.schema";
+import * as tagService from "@/server/services/tag.service";
 import type { ActionResult } from "@/types/actions";
 
 export async function getTags() {
@@ -15,7 +17,7 @@ export async function createTag(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("lots:manage");
+  const session = await requirePermission("lots:manage");
 
   const raw = {
     label: formData.get("label"),
@@ -27,24 +29,16 @@ export async function createTag(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  const name = labelToName(parsed.data.label);
-  if (!name) {
-    return { success: false, error: "El nombre generado es inválido" };
+  try {
+    await tagService.createTag(parsed.data.label, parsed.data.color || null, session.user.id);
+    revalidatePath("/desarrollos");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al crear la etiqueta" };
   }
-
-  const exists = await tagModel.nameExists(name);
-  if (exists) {
-    return { success: false, error: "Ya existe una etiqueta con ese nombre" };
-  }
-
-  await tagModel.create({
-    name,
-    label: parsed.data.label,
-    color: parsed.data.color || null,
-  });
-
-  revalidatePath("/desarrollos");
-  return { success: true };
 }
 
 export async function updateTag(
@@ -52,7 +46,7 @@ export async function updateTag(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("lots:manage");
+  const session = await requirePermission("lots:manage");
 
   const raw = {
     id,
@@ -65,37 +59,31 @@ export async function updateTag(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  const name = labelToName(parsed.data.label);
-  if (!name) {
-    return { success: false, error: "El nombre generado es inválido" };
+  try {
+    await tagService.updateTag(id, parsed.data.label, parsed.data.color || null, session.user.id);
+    revalidatePath("/desarrollos");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al actualizar la etiqueta" };
   }
-
-  const exists = await tagModel.nameExists(name, id);
-  if (exists) {
-    return { success: false, error: "Ya existe una etiqueta con ese nombre" };
-  }
-
-  await tagModel.update(id, {
-    name,
-    label: parsed.data.label,
-    color: parsed.data.color || null,
-  });
-
-  revalidatePath("/desarrollos");
-  return { success: true };
 }
 
 export async function deleteTag(id: string): Promise<ActionResult> {
-  await requirePermission("lots:manage");
+  const session = await requirePermission("lots:manage");
 
-  const tag = await tagModel.findById(id);
-  if (!tag) {
-    return { success: false, error: "Etiqueta no encontrada" };
+  try {
+    await tagService.deleteTag(id, session.user.id);
+    revalidatePath("/desarrollos");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al eliminar la etiqueta" };
   }
-
-  await tagModel.delete(id);
-  revalidatePath("/desarrollos");
-  return { success: true };
 }
 
 export async function getTagsForLot(lotId: string) {
@@ -109,19 +97,16 @@ export async function bulkSetLotTags(
 ): Promise<ActionResult> {
   await requirePermission("lots:manage");
 
-  if (lotIds.length === 0) {
-    return { success: false, error: "No se seleccionaron lotes" };
+  try {
+    await tagService.bulkSetLotTags(lotIds, tagIds);
+    revalidatePath("/desarrollos");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al asignar etiquetas" };
   }
-  if (lotIds.length > 200) {
-    return { success: false, error: "Maximo 200 lotes por operacion" };
-  }
-
-  for (const lotId of lotIds) {
-    await tagModel.setLotTags(lotId, tagIds);
-  }
-
-  revalidatePath("/desarrollos");
-  return { success: true };
 }
 
 export async function setLotTags(lotId: string, tagIds: string[]): Promise<ActionResult> {

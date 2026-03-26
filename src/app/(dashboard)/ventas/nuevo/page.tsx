@@ -1,7 +1,7 @@
 import { requirePermission } from "@/lib/auth-guard";
 import { PageHeader } from "@/components/shared/page-header";
 import { prisma } from "@/lib/prisma";
-import { getDevelopments } from "@/server/actions/development.actions";
+import { getDevelopmentOptions } from "@/server/actions/development.actions";
 import { getPersons } from "@/server/actions/person.actions";
 import { getActiveSellers } from "@/server/actions/user.actions";
 import { SaleForm } from "../_components/sale-form";
@@ -9,8 +9,8 @@ import { SaleForm } from "../_components/sale-form";
 export default async function NewSalePage() {
   await requirePermission("sales:manage");
 
-  const [developments, persons, sellers, lots] = await Promise.all([
-    getDevelopments(),
+  const [developments, persons, sellers, lots, latestRate] = await Promise.all([
+    getDevelopmentOptions(),
     getPersons({ isActive: true }),
     getActiveSellers(),
     prisma.lot.findMany({
@@ -24,6 +24,10 @@ export default async function NewSalePage() {
       },
       orderBy: { lotNumber: "asc" },
     }),
+    prisma.exchangeRate.findFirst({
+      orderBy: { date: "desc" },
+      select: { blueSell: true },
+    }),
   ]);
 
   return (
@@ -33,7 +37,7 @@ export default async function NewSalePage() {
         description="Registrar una nueva operacion de venta"
       />
       <SaleForm
-        developments={developments.map((d) => ({ id: d.id, name: d.name }))}
+        developments={developments}
         lots={lots.map((l) => ({
           id: l.id,
           lotNumber: l.lotNumber,
@@ -45,12 +49,15 @@ export default async function NewSalePage() {
           id: p.id,
           firstName: p.firstName,
           lastName: p.lastName,
+          dni: p.dni,
+          phone: p.phone,
         }))}
         sellers={sellers.map((s) => ({
           id: s.id,
           name: `${s.name} ${s.lastName}`.trim(),
           commissionRate: s.commissionRate ? Number(s.commissionRate) : null,
         }))}
+        latestExchangeRate={latestRate?.blueSell ? Number(latestRate.blueSell) : null}
       />
     </div>
   );

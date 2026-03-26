@@ -121,25 +121,25 @@ export const paymentReceiptModel = {
     return prisma.paymentReceipt.create({ data });
   },
 
+  /**
+   * Generate a unique receipt number atomically using a raw query
+   * to prevent race conditions on concurrent receipt generation.
+   */
   async generateReceiptNumber(): Promise<string> {
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `REC-${year}${month}-`;
 
-    // Find the latest receipt for the current month
-    const latest = await prisma.paymentReceipt.findFirst({
-      where: {
-        receiptNumber: { startsWith: prefix },
-      },
-      orderBy: { receiptNumber: "desc" },
-      select: { receiptNumber: true },
-    });
+    // Use a single atomic query to find max and compute next number
+    const result = await prisma.$queryRaw<
+      { max_number: string | null }[]
+    >`SELECT MAX("receipt_number") as max_number FROM "payment_receipts" WHERE "receipt_number" LIKE ${prefix + '%'}`;
 
     let nextNumber = 1;
-    if (latest) {
-      // Extract the counter from e.g. "REC-202602-0042"
-      const parts = latest.receiptNumber.split("-");
+    const maxNumber = result[0]?.max_number;
+    if (maxNumber) {
+      const parts = maxNumber.split("-");
       const lastCounter = parseInt(parts[2], 10);
       if (!isNaN(lastCounter)) {
         nextNumber = lastCounter + 1;

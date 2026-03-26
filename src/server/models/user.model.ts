@@ -172,4 +172,12 @@ export const userModel = {
       data: { commissionRate: rate },
     });
   },
+
+  async findActiveForMessaging() {
+    return prisma.user.findMany({
+      where: { isActive: true },
+      select: { id: true, name: true, lastName: true },
+      orderBy: { name: "asc" },
+    });
+  },
 };

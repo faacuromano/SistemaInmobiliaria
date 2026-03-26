@@ -30,10 +30,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { CURRENCY_LABELS } from "@/lib/constants";
+import { CURRENCY_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/format";
 import { Price } from "@/components/shared/price";
-import { Currency } from "@/types/enums";
+import { Currency, PaymentMethod } from "@/types/enums";
 import { payInstallment } from "@/server/actions/payment.actions";
 import type { ActionResult } from "@/types/actions";
 import { CurrencyEquivalence } from "./currency-equivalence";
@@ -45,6 +45,8 @@ const paymentFormSchema = z.object({
     .transform((v) => parseFloat(v))
     .pipe(z.number().positive("El monto debe ser mayor a 0")),
   currency: z.nativeEnum(Currency),
+  paymentMethod: z.nativeEnum(PaymentMethod).default(PaymentMethod.EFECTIVO),
+  bankAccountId: z.string().optional().or(z.literal("")),
   manualRate: z
     .string()
     .optional()
@@ -67,15 +69,17 @@ interface Props {
     paidAmount: number;
     currency: string;
   };
+  bankAccounts?: Array<{ id: string; name: string }>;
 }
 
 export function PayInstallmentDialog({
   open,
   onOpenChange,
   installment,
+  bankAccounts = [],
 }: Props) {
   const router = useRouter();
-  const remaining = installment.amount - installment.paidAmount;
+  const remaining = Math.round((installment.amount - installment.paidAmount) * 100) / 100;
   const today = new Date().toISOString().split("T")[0];
   const currencyCode = installment.currency as "USD" | "ARS";
 
@@ -92,6 +96,8 @@ export function PayInstallmentDialog({
     defaultValues: {
       amount: remaining.toString(),
       currency: installment.currency as Currency,
+      paymentMethod: PaymentMethod.EFECTIVO,
+      bankAccountId: "",
       manualRate: "",
       notes: "",
       date: today,
@@ -101,10 +107,12 @@ export function PayInstallmentDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      const currentRemaining = installment.amount - installment.paidAmount;
+      const currentRemaining = Math.round((installment.amount - installment.paidAmount) * 100) / 100;
       form.reset({
         amount: currentRemaining.toString(),
         currency: installment.currency as Currency,
+        paymentMethod: PaymentMethod.EFECTIVO,
+        bankAccountId: "",
         manualRate: "",
         notes: "",
         date: new Date().toISOString().split("T")[0],
@@ -157,7 +165,7 @@ export function PayInstallmentDialog({
                   <FormItem>
                     <FormLabel>Fecha de Pago</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" max={today} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -223,6 +231,68 @@ export function PayInstallmentDialog({
                   )}
                 />
               </div>
+
+              {/* Payment method */}
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Metodo de Pago</FormLabel>
+                    <Select
+                      name="paymentMethod"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Bank account (only for TRANSFERENCIA) */}
+              {form.watch("paymentMethod") === PaymentMethod.TRANSFERENCIA && bankAccounts.length > 0 && (
+                <FormField
+                  control={form.control}
+                  name="bankAccountId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Cuenta Destino</FormLabel>
+                      <Select
+                        name="bankAccountId"
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccionar cuenta" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {bankAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Currency equivalence */}
               {(() => {

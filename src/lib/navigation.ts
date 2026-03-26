@@ -106,7 +106,7 @@ export const navigation: NavGroup[] = [
         permission: "users:view",
       },
       {
-        label: "Auditoria",
+        label: "Registros",
         href: "/auditoria",
         icon: ClipboardList,
         permission: "config:manage",

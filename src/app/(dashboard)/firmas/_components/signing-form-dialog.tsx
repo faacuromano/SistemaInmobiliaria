@@ -51,6 +51,8 @@ interface Props {
     sellerId: string | null;
     status: string;
     notes: string | null;
+    saleId?: string | null;
+    saleLabel?: string | null;
   };
 }
 
@@ -125,6 +127,14 @@ export function SigningFormDialog({
         <Form {...form}>
           <form action={formAction} className="space-y-4 pt-2">
             {isEditing && defaultValues && <input type="hidden" name="id" value={defaultValues.id} />}
+            {defaultValues?.saleId && <input type="hidden" name="saleId" value={defaultValues.saleId} />}
+
+            {defaultValues?.saleId && defaultValues.saleLabel && (
+              <div className="rounded-md bg-muted px-3 py-2 text-sm">
+                <span className="text-muted-foreground">Venta vinculada:</span>{" "}
+                <span className="font-medium">{defaultValues.saleLabel}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <FormField

@@ -7,8 +7,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { saleCreateSchema, type SaleCreateInput } from "@/schemas/sale.schema";
 import { createSale } from "@/server/actions/sale.actions";
-import { SaleStatus, Currency } from "@/types/enums";
-import { SALE_STATUS_LABELS, CURRENCY_LABELS } from "@/lib/constants";
+import { SaleStatus, Currency, InstallmentMode, CesionType } from "@/types/enums";
+import { SALE_STATUS_LABELS, CURRENCY_LABELS, CESION_TYPE_LABELS } from "@/lib/constants";
 import { calculateInstallmentPreview } from "@/lib/sale-helpers";
 import { formatCurrency } from "@/lib/format";
 import type { ActionResult } from "@/types/actions";
@@ -33,7 +33,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2, CalendarDays } from "lucide-react";
+import { Plus, Trash2, CalendarDays, Search, X, Phone } from "lucide-react";
 import { CreatePersonDialog } from "./create-person-dialog";
 import { SaleSuccessDialog } from "./sale-success-dialog";
 
@@ -53,8 +53,9 @@ interface Props {
     developmentId: string;
     status: string;
   }>;
-  persons: Array<{ id: string; firstName: string; lastName: string }>;
+  persons: Array<{ id: string; firstName: string; lastName: string; dni: string | null; phone: string | null }>;
   sellers: Array<{ id: string; name: string; commissionRate: number | null }>;
+  latestExchangeRate: number | null;
 }
 
 function getTodayString(): string {
@@ -94,7 +95,7 @@ function getSmartFirstMonth(collectionDay: number): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
-export function SaleForm({ developments, lots, persons: initialPersons, sellers }: Props) {
+export function SaleForm({ developments, lots, persons: initialPersons, sellers, latestExchangeRate }: Props) {
   const router = useRouter();
   const todayString = useRef(getTodayString()).current;
 
@@ -121,7 +122,10 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
       firstInstallmentMonth: getCurrentMonthString(),
       collectionDay: "",
       commissionAmount: "",
+      installmentMode: InstallmentMode.AUTOMATICO,
       status: SaleStatus.ACTIVA,
+      cesionType: undefined,
+      cesionDetail: "",
       notes: "",
       paymentWindow: "",
     },
@@ -139,11 +143,25 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
   // Commission mode: false = auto from seller rate, true = manual override
   const [customCommission, setCustomCommission] = useState(false);
 
+  // Exchange rate mode: false = auto from latest rate, true = manual override
+  const [customExchangeRate, setCustomExchangeRate] = useState(false);
+  const [exchangeRateValue, setExchangeRateValue] = useState(
+    latestExchangeRate ? String(latestExchangeRate) : ""
+  );
+
+  // Person search
+  const [personSearch, setPersonSearch] = useState("");
+
   // Signing date managed as local state (not in react-hook-form since it's a new field)
   const [signingDate, setSigningDate] = useState("");
 
   // Sale ID after successful creation (shows success dialog)
   const [successSaleId, setSuccessSaleId] = useState<string | null>(null);
+
+  // Manual installments (when mode = MANUAL)
+  const [manualInstallments, setManualInstallments] = useState<
+    Array<{ amount: string }>
+  >([]);
 
   // Extra charges (refuerzos) managed as local state, serialized to hidden input
   const [extraCharges, setExtraCharges] = useState<
@@ -189,6 +207,25 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
   const watchedCollectionDay = form.watch("collectionDay");
   const watchedCurrency = form.watch("currency");
   const watchedSellerId = form.watch("sellerId");
+  const watchedPersonId = form.watch("personId");
+  const watchedInstallmentMode = form.watch("installmentMode");
+
+  // Sync manual installments array size with totalInstallments
+  useEffect(() => {
+    if (watchedInstallmentMode !== InstallmentMode.MANUAL) return;
+    const count = parseInt(watchedTotalInstallments || "0", 10);
+    if (count <= 0) {
+      setManualInstallments([]);
+      return;
+    }
+    setManualInstallments((prev) => {
+      if (prev.length === count) return prev;
+      if (prev.length < count) {
+        return [...prev, ...Array(count - prev.length).fill({ amount: "" })];
+      }
+      return prev.slice(0, count);
+    });
+  }, [watchedTotalInstallments, watchedInstallmentMode]);
 
   // Auto-update firstInstallmentMonth when collectionDay changes
   useEffect(() => {
@@ -327,12 +364,30 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
 
   // Handle inline person creation
   const handlePersonCreated = useCallback(
-    (person: { id: string; firstName: string; lastName: string }) => {
+    (person: { id: string; firstName: string; lastName: string; dni: string | null; phone: string | null }) => {
       setPersonsList((prev) => [...prev, person]);
-      form.setValue("personId", person.id);
+      setPersonSearch("");
+      form.setValue("personId", person.id, { shouldValidate: true });
     },
     [form]
   );
+
+  // Selected person display info
+  const selectedPerson = useMemo(
+    () => personsList.find((p) => p.id === watchedPersonId),
+    [personsList, watchedPersonId]
+  );
+
+  // Filtered persons for search
+  const filteredPersons = useMemo(() => {
+    if (!personSearch.trim()) return [];
+    const query = personSearch.toLowerCase();
+    return personsList.filter(
+      (p) =>
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(query) ||
+        (p.dni && p.dni.includes(query))
+    );
+  }, [personsList, personSearch]);
 
   const currencyCode = (watchedCurrency as "USD" | "ARS") || "USD";
 
@@ -344,6 +399,11 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
         <input type="hidden" name="saleDate" value={todayString} />
         <input type="hidden" name="signingDate" value={signingDate} />
         <input type="hidden" name="extraCharges" value={JSON.stringify(extraCharges)} />
+        <input type="hidden" name="manualInstallments" value={JSON.stringify(manualInstallments)} />
+        <input type="hidden" name="installmentMode" value={watchedInstallmentMode} />
+        {watchedCurrency === Currency.USD && exchangeRateValue && (
+          <input type="hidden" name="exchangeRateOverride" value={exchangeRateValue} />
+        )}
 
         {/* Section 1: Lote */}
         <Card>
@@ -416,44 +476,120 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
         {/* Section 2: Comprador */}
         <Card>
           <CardHeader>
-            <CardTitle>Comprador</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <FormField
-                  control={form.control}
-                  name="personId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cliente</FormLabel>
-                      <Select
-                        name="personId"
-                        value={field.value}
-                        onValueChange={field.onChange}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccionar comprador" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {personsList.map((person) => (
-                            <SelectItem key={person.id} value={person.id}>
-                              {person.firstName} {person.lastName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="pt-7">
-                <CreatePersonDialog onCreated={handlePersonCreated} />
-              </div>
+            <div className="flex items-center justify-between">
+              <CardTitle>Comprador</CardTitle>
+              <CreatePersonDialog onCreated={handlePersonCreated} />
             </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {/* Hidden field for form submission */}
+            <input type="hidden" name="personId" value={watchedPersonId} />
+
+            {/* Selected person display */}
+            {selectedPerson ? (
+              <div className="flex items-center justify-between rounded-lg border bg-muted/50 px-4 py-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium">
+                    {selectedPerson.firstName} {selectedPerson.lastName}
+                  </span>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    {selectedPerson.dni && <span>DNI: {selectedPerson.dni}</span>}
+                    {selectedPerson.phone && (
+                      <span className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        {selectedPerson.phone}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 shrink-0"
+                  onClick={() => {
+                    form.setValue("personId", "");
+                    form.clearErrors("personId");
+                    setPersonSearch("");
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <>
+                {/* Search input */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Buscar por nombre, apellido o DNI..."
+                    value={personSearch}
+                    onChange={(e) => setPersonSearch(e.target.value)}
+                    className="pl-9"
+                    autoComplete="off"
+                  />
+                </div>
+
+                {/* Search results */}
+                {personSearch.trim() && (
+                  <div className="max-h-48 overflow-y-auto rounded-md border">
+                    {filteredPersons.length > 0 ? (
+                      filteredPersons.slice(0, 8).map((person) => (
+                        <button
+                          key={person.id}
+                          type="button"
+                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-accent transition-colors border-b last:border-b-0"
+                          onClick={() => {
+                            form.setValue("personId", person.id, { shouldValidate: true });
+                            setPersonSearch("");
+                          }}
+                        >
+                          <div className="flex flex-col">
+                            <span className="font-medium">
+                              {person.firstName} {person.lastName}
+                            </span>
+                            {person.dni && (
+                              <span className="text-xs text-muted-foreground">
+                                DNI: {person.dni}
+                              </span>
+                            )}
+                          </div>
+                          {person.phone && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {person.phone}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                        No se encontraron resultados
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* No search hint */}
+                {!personSearch.trim() && (
+                  <p className="text-sm text-muted-foreground">
+                    Escribi un nombre, apellido o DNI para buscar un cliente
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Validation error */}
+            <FormField
+              control={form.control}
+              name="personId"
+              render={() => (
+                <FormItem className="space-y-0">
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 
@@ -500,7 +636,7 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
               />
 
               <div className="space-y-2">
-                <Label htmlFor="signingDate">Fecha de Firma</Label>
+                <Label htmlFor="signingDate">Fecha de Firma (opcional)</Label>
                 <Input
                   id="signingDate"
                   type="date"
@@ -509,6 +645,44 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
                 />
               </div>
             </div>
+
+            {/* Cesion type (only for CESION status) */}
+            {watchedStatus === SaleStatus.CESION && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Cesion</Label>
+                  <Select
+                    name="cesionType"
+                    value={form.watch("cesionType") || ""}
+                    onValueChange={(v) => form.setValue("cesionType", v as CesionType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(CESION_TYPE_LABELS).map(([key, label]) => (
+                        <SelectItem key={key} value={key}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {form.watch("cesionType") === CesionType.CANJE && (
+                  <div className="space-y-2">
+                    <Label>Detalle del Canje</Label>
+                    <Input
+                      name="cesionDetail"
+                      type="text"
+                      placeholder="Ej: Servicios, Publicidad, Construccion..."
+                      value={form.watch("cesionDetail") || ""}
+                      onChange={(e) => form.setValue("cesionDetail", e.target.value)}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <FormField
@@ -589,6 +763,49 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
                 )}
               />
             </div>
+
+            {watchedCurrency === Currency.USD && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="customExchangeRate"
+                    checked={customExchangeRate}
+                    onCheckedChange={(checked) => {
+                      setCustomExchangeRate(checked);
+                      if (!checked && latestExchangeRate) {
+                        setExchangeRateValue(String(latestExchangeRate));
+                      }
+                    }}
+                  />
+                  <Label htmlFor="customExchangeRate" className="text-sm">
+                    Cotizacion especifica
+                  </Label>
+                  {!customExchangeRate && latestExchangeRate && (
+                    <span className="text-xs text-muted-foreground">
+                      (Dolar Blue Venta: ${latestExchangeRate})
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cotizacion USD/ARS</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={exchangeRateValue}
+                    onChange={(e) => setExchangeRateValue(e.target.value)}
+                    disabled={!customExchangeRate && latestExchangeRate !== null}
+                    className={
+                      !customExchangeRate && latestExchangeRate !== null
+                        ? "bg-muted"
+                        : ""
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
             <FormField
               control={form.control}
@@ -713,6 +930,29 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Installment mode toggle */}
+              <div className="flex items-center gap-3">
+                <Label>Modo de cuotas:</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={watchedInstallmentMode === InstallmentMode.AUTOMATICO ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => form.setValue("installmentMode", InstallmentMode.AUTOMATICO)}
+                  >
+                    Automaticas
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={watchedInstallmentMode === InstallmentMode.MANUAL ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => form.setValue("installmentMode", InstallmentMode.MANUAL)}
+                  >
+                    Manuales
+                  </Button>
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="totalInstallments"
@@ -733,7 +973,7 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
                 )}
               />
 
-              {autoCalculated.totalInstallments > 0 && (
+              {autoCalculated.totalInstallments > 0 && watchedInstallmentMode === InstallmentMode.AUTOMATICO && (
                 <>
                   {/* Optional first installment override */}
                   <FormField
@@ -921,6 +1161,134 @@ export function SaleForm({ developments, lots, persons: initialPersons, sellers 
                       </div>
                     </div>
                   )}
+                </>
+              )}
+
+              {/* Manual installments mode */}
+              {autoCalculated.totalInstallments > 0 && watchedInstallmentMode === InstallmentMode.MANUAL && (
+                <>
+                  {/* Financing breakdown for manual mode */}
+                  {autoCalculated.totalPrice > 0 && (
+                    <div className="rounded-md border p-4 bg-muted/50">
+                      <div className="space-y-1 font-mono text-sm">
+                        <div className="flex justify-between">
+                          <span>Precio Total:</span>
+                          <span>{formatCurrency(autoCalculated.totalPrice, currencyCode)}</span>
+                        </div>
+                        {autoCalculated.downPayment > 0 && (
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Entrega:</span>
+                            <span>-{formatCurrency(autoCalculated.downPayment, currencyCode)}</span>
+                          </div>
+                        )}
+                        {autoCalculated.totalExtraCharges > 0 && (
+                          <div className="flex justify-between text-muted-foreground">
+                            <span>Refuerzos pactados:</span>
+                            <span>-{formatCurrency(autoCalculated.totalExtraCharges, currencyCode)}</span>
+                          </div>
+                        )}
+                        <div className="border-t my-1" />
+                        <div className="flex justify-between font-semibold">
+                          <span>A Financiar en cuotas:</span>
+                          <span>{formatCurrency(autoCalculated.toFinance, currencyCode)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual installment inputs */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium leading-none">
+                      Montos de cada cuota ({currencyCode})
+                    </label>
+                    <div className="max-h-72 overflow-y-auto space-y-2">
+                      {manualInstallments.map((inst, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-16 shrink-0">
+                            Cuota {index + 1}
+                          </span>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0.00"
+                            value={inst.amount}
+                            onChange={(e) => {
+                              setManualInstallments((prev) =>
+                                prev.map((item, i) =>
+                                  i === index ? { amount: e.target.value } : item
+                                )
+                              );
+                            }}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Manual total validation */}
+                    {(() => {
+                      const manualTotal = manualInstallments.reduce(
+                        (sum, i) => sum + (parseFloat(i.amount) || 0),
+                        0
+                      );
+                      const diff = Math.abs(manualTotal - autoCalculated.toFinance);
+                      return (
+                        <div className={`text-sm font-medium ${diff > 0.02 ? "text-destructive" : "text-green-600"}`}>
+                          Total ingresado: {formatCurrency(manualTotal, currencyCode)}
+                          {diff > 0.02 && (
+                            <span className="ml-2">
+                              (Diferencia: {formatCurrency(diff, currencyCode)})
+                            </span>
+                          )}
+                          {diff <= 0.02 && manualTotal > 0 && <span className="ml-2">OK</span>}
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="firstInstallmentMonth"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Mes Primera Cuota</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="month"
+                              {...field}
+                              onChange={(e) => {
+                                userEditedMonth.current = true;
+                                field.onChange(e);
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="collectionDay"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dia de Cobro</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="31"
+                              placeholder="10"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </>
               )}
             </CardContent>

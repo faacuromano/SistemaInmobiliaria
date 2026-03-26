@@ -10,6 +10,9 @@ import type {
   MovementType,
   SigningStatus,
   Role,
+  InstallmentMode,
+  CesionType,
+  PaymentMethod,
 } from "@/types/enums";
 
 export const DEVELOPMENT_STATUS_LABELS: Record<DevelopmentStatus, string> = {
@@ -209,4 +212,19 @@ export const ROLE_COLORS: Record<
   ADMINISTRACION: "default",
   FINANZAS: "secondary",
   COBRANZA: "outline",
+};
+
+export const INSTALLMENT_MODE_LABELS: Record<InstallmentMode, string> = {
+  AUTOMATICO: "Automáticas",
+  MANUAL: "Manuales",
+};
+
+export const CESION_TYPE_LABELS: Record<CesionType, string> = {
+  GRATIS: "Gratis (Cesión)",
+  CANJE: "Canje (Servicios, Publicidad, etc.)",
+};
+
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  EFECTIVO: "Efectivo",
+  TRANSFERENCIA: "Transferencia Bancaria",
 };

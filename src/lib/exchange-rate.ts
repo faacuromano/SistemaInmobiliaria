@@ -62,5 +62,8 @@ export async function convertCurrency(
     return amount * rate;
   }
   // ARS to USD
-  return rate > 0 ? amount / rate : 0;
+  if (rate <= 0) {
+    throw new Error("Exchange rate must be greater than 0");
+  }
+  return amount / rate;
 }

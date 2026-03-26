@@ -9,7 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, Mail, Phone, MapPin, User, ChevronRight, Calendar } from "lucide-react";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import { PERSON_TYPE_LABELS, PERSON_TYPE_COLORS, SALE_STATUS_LABELS, SALE_STATUS_COLORS } from "@/lib/constants";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { DebtSummary } from "./_components/debt-summary";
@@ -27,7 +28,7 @@ export default async function PersonDetailPage({ params }: Props) {
 
   if (!person) notFound();
 
-  const canManage = hasPermission(session.user.role, "persons:manage");
+  const canManage = await checkPermissionDb(session.user.role as Role, "persons:manage");
 
   // Serialize Prisma Decimals to plain numbers for client components
   // JSON round-trip converts all Decimal instances to numbers and Dates to strings

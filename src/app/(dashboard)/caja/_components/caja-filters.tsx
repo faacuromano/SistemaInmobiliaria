@@ -11,13 +11,14 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MOVEMENT_TYPE_LABELS } from "@/lib/constants";
+import { MOVEMENT_TYPE_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/constants";
 
 interface Props {
   developments: Array<{ id: string; name: string }>;
+  bankAccounts: Array<{ id: string; name: string }>;
 }
 
-export function CajaFilters({ developments }: Props) {
+export function CajaFilters({ developments, bankAccounts }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -65,6 +66,38 @@ export function CajaFilters({ developments }: Props) {
           {developments.map((dev) => (
             <SelectItem key={dev.id} value={dev.id}>
               {dev.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={searchParams.get("paymentMethod") ?? "all"}
+        onValueChange={(v) => handleFilter("paymentMethod", v)}
+      >
+        <SelectTrigger className="w-52">
+          <SelectValue placeholder="Método de pago" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todos los métodos</SelectItem>
+          {Object.entries(PAYMENT_METHOD_LABELS).map(([key, label]) => (
+            <SelectItem key={key} value={key}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={searchParams.get("bankAccountId") ?? "all"}
+        onValueChange={(v) => handleFilter("bankAccountId", v)}
+      >
+        <SelectTrigger className="w-52">
+          <SelectValue placeholder="Cuenta bancaria" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Todas las cuentas</SelectItem>
+          {bankAccounts.map((account) => (
+            <SelectItem key={account.id} value={account.id}>
+              {account.name}
             </SelectItem>
           ))}
         </SelectContent>

@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/auth-guard";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import { getUsers } from "@/server/actions/user.actions";
 import { getSystemConfig } from "@/server/actions/system-config.actions";
 import {
@@ -16,6 +17,8 @@ import { ImportSection } from "./_components/import-section";
 import { getBusinessHours } from "@/server/actions/business-hours.actions";
 import { DEFAULT_BUSINESS_HOURS } from "@/lib/business-hours";
 import { BusinessHoursSection } from "./_components/business-hours-section";
+import { getBankAccounts } from "@/server/actions/bank-account.actions";
+import { BankAccountsSection } from "./_components/bank-accounts-section";
 
 interface Props {
   searchParams: Promise<{
@@ -29,10 +32,12 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
   const session = await requirePermission("users:view");
   const params = await searchParams;
 
-  const canManageUsers = hasPermission(session.user.role, "users:manage");
-  const canManageConfig = hasPermission(session.user.role, "config:manage");
+  const [canManageUsers, canManageConfig] = await Promise.all([
+    checkPermissionDb(session.user.role as Role, "users:manage"),
+    checkPermissionDb(session.user.role as Role, "config:manage"),
+  ]);
 
-  const [users, config, rolePermissionsRaw, businessHours] = await Promise.all([
+  const [users, config, rolePermissionsRaw, businessHours, bankAccountsRaw] = await Promise.all([
     getUsers({
       search: params.search,
       role: params.role,
@@ -40,6 +45,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
     canManageConfig ? getSystemConfig() : Promise.resolve({} as Record<string, string>),
     canManageConfig ? getAllRolePermissions() : Promise.resolve({} as Record<string, string[]>),
     canManageConfig ? getBusinessHours() : Promise.resolve(DEFAULT_BUSINESS_HOURS),
+    canManageConfig ? getBankAccounts() : Promise.resolve([]),
   ]);
 
   // Auto-seed default permissions if the table is empty
@@ -58,7 +64,7 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
   }));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
         title="Configuracion"
         description="Gestion de usuarios y configuracion del sistema"
@@ -79,6 +85,9 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
           )}
           {canManageConfig && (
             <TabsTrigger value="horarios">Horarios</TabsTrigger>
+          )}
+          {canManageConfig && (
+            <TabsTrigger value="cuentas">Cuentas Bancarias</TabsTrigger>
           )}
         </TabsList>
         <TabsContent value="usuarios" className="mt-6">
@@ -105,6 +114,11 @@ export default async function ConfiguracionPage({ searchParams }: Props) {
         {canManageConfig && (
           <TabsContent value="horarios" className="mt-6">
             <BusinessHoursSection config={businessHours} />
+          </TabsContent>
+        )}
+        {canManageConfig && (
+          <TabsContent value="cuentas" className="mt-6">
+            <BankAccountsSection accounts={bankAccountsRaw} />
           </TabsContent>
         )}
       </Tabs>

@@ -57,4 +57,12 @@ export const extraChargeModel = {
       where: { id },
     });
   },
+
+  async findSaleIdById(id: string) {
+    const row = await prisma.extraCharge.findUnique({
+      where: { id },
+      select: { saleId: true },
+    });
+    return row?.saleId ?? null;
+  },
 };

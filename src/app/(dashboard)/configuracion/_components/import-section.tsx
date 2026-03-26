@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { importPersons, importSales, type ImportResult } from "@/server/actions/import.actions";
+import { importPersons, importSales } from "@/server/actions/import.actions";
+import type { ImportResult } from "@/server/services/import.service";
 import {
   Upload,
   FileJson,

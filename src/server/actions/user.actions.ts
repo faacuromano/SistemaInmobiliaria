@@ -2,16 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
+import { ServiceError } from "@/lib/service-error";
 import { userModel } from "@/server/models/user.model";
 import {
   userCreateSchema,
   userUpdateSchema,
   passwordChangeSchema,
 } from "@/schemas/user.schema";
-import { logAction } from "@/server/actions/audit-log.actions";
+import * as userService from "@/server/services/user.service";
 import type { ActionResult } from "@/types/actions";
-import { Prisma } from "@/generated/prisma/client/client";
-import bcrypt from "bcryptjs";
 
 export async function getUsers(params?: {
   search?: string;
@@ -31,7 +30,7 @@ export async function createUser(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
   const raw = {
     email: formData.get("email"),
@@ -47,40 +46,23 @@ export async function createUser(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
-
   try {
-    const user = await userModel.create({
-      email: parsed.data.email,
-      password: hashedPassword,
-      name: parsed.data.name,
-      lastName: parsed.data.lastName,
-      role: parsed.data.role,
-      phone: parsed.data.phone || null,
-    });
-
-    await logAction("User", user.id, "CREATE", {
-      newData: { email: parsed.data.email, name: parsed.data.name, lastName: parsed.data.lastName, role: parsed.data.role },
-    });
+    await userService.createUser(parsed.data, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return { success: false, error: "Ya existe un usuario con ese email" };
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
     }
-    throw error;
+    return { success: false, error: "Error al crear el usuario" };
   }
-
-  revalidatePath("/configuracion");
-  return { success: true };
 }
 
 export async function updateUser(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
   const raw = {
     id: formData.get("id"),
@@ -97,36 +79,22 @@ export async function updateUser(
   }
 
   try {
-    await userModel.update(parsed.data.id, {
-      email: parsed.data.email,
-      name: parsed.data.name,
-      lastName: parsed.data.lastName,
-      role: parsed.data.role,
-      phone: parsed.data.phone || null,
-    });
-
-    await logAction("User", parsed.data.id, "UPDATE", {
-      newData: { email: parsed.data.email, name: parsed.data.name, lastName: parsed.data.lastName, role: parsed.data.role },
-    });
+    await userService.updateUser(parsed.data, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
   } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    ) {
-      return { success: false, error: "Ya existe un usuario con ese email" };
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
     }
-    throw error;
+    return { success: false, error: "Error al actualizar el usuario" };
   }
-
-  revalidatePath("/configuracion");
-  return { success: true };
 }
 
 export async function changeUserPassword(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
   const raw = {
     id: formData.get("id"),
@@ -138,32 +106,31 @@ export async function changeUserPassword(
     return { success: false, error: parsed.error.errors[0].message };
   }
 
-  const hashedPassword = await bcrypt.hash(parsed.data.password, 10);
-  await userModel.updatePassword(parsed.data.id, hashedPassword);
-
-  await logAction("User", parsed.data.id, "UPDATE", {
-    newData: { passwordChanged: true },
-  });
-
-  revalidatePath("/configuracion");
-  return { success: true };
+  try {
+    await userService.changeUserPassword(parsed.data.id, parsed.data.password, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al cambiar la contraseña" };
+  }
 }
 
 export async function toggleUserActive(id: string): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
-  const user = await userModel.findById(id);
-  if (!user) return { success: false, error: "Usuario no encontrado" };
-
-  await userModel.toggleActive(id, !user.isActive);
-
-  await logAction("User", id, "UPDATE", {
-    oldData: { isActive: user.isActive },
-    newData: { isActive: !user.isActive },
-  });
-
-  revalidatePath("/configuracion");
-  return { success: true };
+  try {
+    await userService.toggleUserActive(id, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al cambiar estado del usuario" };
+  }
 }
 
 // --- Seller management actions ---
@@ -182,28 +149,34 @@ export async function getActiveSellers() {
 }
 
 export async function toggleUserSeller(id: string): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
-  const user = await userModel.findById(id);
-  if (!user) return { success: false, error: "Usuario no encontrado" };
-
-  await userModel.toggleSeller(id, !user.isSeller);
-  revalidatePath("/configuracion");
-
-  return { success: true };
+  try {
+    await userService.toggleUserSeller(id, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al cambiar estado de vendedor" };
+  }
 }
 
 export async function updateUserCommission(
   id: string,
   rate: number | null
 ): Promise<ActionResult> {
-  await requirePermission("users:manage");
+  const session = await requirePermission("users:manage");
 
-  const user = await userModel.findById(id);
-  if (!user) return { success: false, error: "Usuario no encontrado" };
-
-  await userModel.updateCommissionRate(id, rate);
-  revalidatePath("/configuracion");
-
-  return { success: true };
+  try {
+    await userService.updateUserCommission(id, rate, session.user.id);
+    revalidatePath("/configuracion");
+    return { success: true };
+  } catch (error) {
+    if (error instanceof ServiceError) {
+      return { success: false, error: error.message };
+    }
+    return { success: false, error: "Error al actualizar comisión" };
+  }
 }

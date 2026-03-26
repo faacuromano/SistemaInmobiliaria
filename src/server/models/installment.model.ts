@@ -21,4 +21,12 @@ export const installmentModel = {
       orderBy: { installmentNumber: "asc" },
     });
   },
+
+  async findSaleIdById(id: string) {
+    const row = await prisma.installment.findUnique({
+      where: { id },
+      select: { saleId: true },
+    });
+    return row?.saleId ?? null;
+  },
 };

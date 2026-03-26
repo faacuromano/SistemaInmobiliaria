@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 
+// Transaction client type compatible with prisma.$transaction callback parameter
+type TxClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
 /**
  * Recalculates unpaid installment amounts after an extra charge (refuerzo) is paid.
  *
@@ -10,13 +13,17 @@ import { prisma } from "@/lib/prisma";
  *
  * @param saleId - The sale whose installments should be recalculated
  * @param paidExtraChargeAmount - The extra charge amount that was paid (positive number)
+ * @param tx - Optional transaction client. When provided, all operations run inside that transaction.
  */
 export async function recalculateInstallments(
   saleId: string,
-  paidExtraChargeAmount: number
+  paidExtraChargeAmount: number,
+  tx?: TxClient
 ): Promise<void> {
+  const db = tx ?? prisma;
+
   // 1. Fetch all unpaid installments (pending, overdue, or partially paid)
-  const unpaidInstallments = await prisma.installment.findMany({
+  const unpaidInstallments = await db.installment.findMany({
     where: {
       saleId,
       status: { in: ["PENDIENTE", "VENCIDA", "PARCIAL"] },
@@ -32,14 +39,14 @@ export async function recalculateInstallments(
   const reductionPerInstallment =
     paidExtraChargeAmount / unpaidInstallments.length;
 
-  // 3. Build update operations for each unpaid installment
-  const updateOperations = unpaidInstallments.map((installment) => {
+  // 3. Update each unpaid installment
+  for (const installment of unpaidInstallments) {
     const currentAmount = Number(installment.amount);
     const newAmount = Math.max(currentAmount - reductionPerInstallment, 0);
     const roundedAmount = Math.round(newAmount * 100) / 100;
     const isZeroed = roundedAmount === 0;
 
-    return prisma.installment.update({
+    await db.installment.update({
       where: { id: installment.id },
       data: {
         // Preserve the first original amount; don't overwrite on subsequent recalculations
@@ -49,20 +56,17 @@ export async function recalculateInstallments(
         // Mark zeroed-out installments as fully paid
         ...(isZeroed
           ? {
-              status: "PAGADA",
+              status: "PAGADA" as const,
               paidAmount: currentAmount,
               paidDate: new Date(),
             }
           : {}),
       },
     });
-  });
+  }
 
-  // 4. Execute all updates atomically in a single transaction
-  await prisma.$transaction(updateOperations);
-
-  // 5. If all installments are now paid, auto-complete the sale
-  const remainingUnpaid = await prisma.installment.count({
+  // 4. If all installments are now paid, auto-complete the sale
+  const remainingUnpaid = await db.installment.count({
     where: {
       saleId,
       status: { not: "PAGADA" },
@@ -70,7 +74,7 @@ export async function recalculateInstallments(
   });
 
   if (remainingUnpaid === 0) {
-    await prisma.sale.update({
+    await db.sale.update({
       where: { id: saleId },
       data: { status: "COMPLETADA" },
     });

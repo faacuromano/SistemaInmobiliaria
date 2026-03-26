@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireAuth } from "@/lib/auth-guard";
-import { prisma } from "@/lib/prisma";
 import { messageModel } from "@/server/models/message.model";
+import { userModel } from "@/server/models/user.model";
 import { createNotificationInternal } from "@/server/actions/notification.actions";
 import type { ActionResult } from "@/types/actions";
 import { z } from "zod";
@@ -85,13 +85,5 @@ export async function getUnreadMessageCount() {
  */
 export async function getActiveUsersForMessaging() {
   await requireAuth();
-  return prisma.user.findMany({
-    where: { isActive: true },
-    select: {
-      id: true,
-      name: true,
-      lastName: true,
-    },
-    orderBy: { name: "asc" },
-  });
+  return userModel.findActiveForMessaging();
 }

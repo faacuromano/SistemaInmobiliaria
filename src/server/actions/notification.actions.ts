@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireAuth, requirePermission } from "@/lib/auth-guard";
 import { notificationModel } from "@/server/models/notification.model";
+import { installmentModel } from "@/server/models/installment.model";
+import { extraChargeModel } from "@/server/models/extra-charge.model";
 import type { NotificationType } from "@/generated/prisma/client/client";
 
 export async function getMyNotifications(params?: { read?: boolean }) {
@@ -38,10 +40,6 @@ export async function markAllNotificationsRead() {
   return { success: true as const };
 }
 
-/**
- * Create a notification for a specific user.
- * Can be called internally by other server actions or by admins with config:manage.
- */
 export async function createNotification(
   userId: string,
   type: NotificationType,
@@ -64,10 +62,39 @@ export async function createNotification(
   return { success: true as const };
 }
 
-/**
- * Internal helper — create a notification without permission check.
- * For use within other server actions only.
- */
+export async function resolveNotificationUrl(
+  referenceType: string,
+  referenceId: string | null
+): Promise<string | null> {
+  await requireAuth();
+
+  switch (referenceType) {
+    case "Sale":
+      return referenceId ? `/ventas/${referenceId}` : "/ventas";
+
+    case "Installment": {
+      if (!referenceId) return "/cobranza";
+      const saleId = await installmentModel.findSaleIdById(referenceId);
+      return saleId ? `/ventas/${saleId}` : "/cobranza";
+    }
+
+    case "ExtraCharge": {
+      if (!referenceId) return "/cobranza";
+      const saleId = await extraChargeModel.findSaleIdById(referenceId);
+      return saleId ? `/ventas/${saleId}` : "/cobranza";
+    }
+
+    case "SigningSlot":
+      return "/firmas";
+
+    case "Message":
+      return "/mensajes";
+
+    default:
+      return null;
+  }
+}
+
 export async function createNotificationInternal(
   userId: string,
   type: NotificationType,

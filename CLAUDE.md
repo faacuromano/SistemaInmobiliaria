@@ -47,11 +47,10 @@ src/
 │   │   └── configuracion/
 │   └── api/                # API Routes
 ├── server/
-│   ├── models/             # Data access layer (Prisma wrappers)
-│   ├── services/           # Business logic
-│   ├── controllers/        # Request handlers
-│   └── actions/            # Server Actions
-├── lib/                    # Utilidades compartidas
+│   ├── actions/            # Server Actions (thin handlers: auth + parse + delegate + revalidate)
+│   ├── services/           # Business logic, validaciones, audit logging
+│   └── models/             # Data access layer (Prisma wrappers)
+├── lib/                    # Utilidades compartidas (audit, serialize, auth-guard, etc.)
 ├── schemas/                # Zod validation schemas
 ├── types/                  # TypeScript definitions
 ├── components/             # React components (shadcn/ui)

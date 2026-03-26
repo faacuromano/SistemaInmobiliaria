@@ -5,47 +5,8 @@ import { ServiceError } from "@/lib/service-error";
 import { generateReceipt } from "@/server/services/receipt.service";
 
 // ---------------------------------------------------------------------------
-// Signing Gate — block payments when signing is not completed
+// Signing Gate — warn (but allow) payments when signing is not completed
 // ---------------------------------------------------------------------------
-
-const EXEMPT_SALE_STATUSES = ["CONTADO", "CESION"] as const;
-
-async function checkSigningGate(saleId: string): Promise<void> {
-  const sale = await prisma.sale.findUnique({
-    where: { id: saleId },
-    select: {
-      status: true,
-      signingSlots: {
-        select: { status: true },
-        orderBy: { updatedAt: "desc" },
-        take: 1,
-      },
-    },
-  });
-
-  if (!sale) throw new ServiceError("Venta no encontrada");
-
-  // Exempt sale types skip the gate entirely.
-  // Only CONTADO and CESION are valid exempt SaleStatus values.
-  // Note: PERMUTA is a LotStatus, not a SaleStatus — proveedor-with-lot
-  // operations use CESION sale status per the domain model.
-  if ((EXEMPT_SALE_STATUSES as readonly string[]).includes(sale.status)) {
-    return;
-  }
-
-  // No signing slots linked = legacy sale, allow payment (backward compat)
-  if (sale.signingSlots.length === 0) {
-    return;
-  }
-
-  // Has signing slot(s) but none is COMPLETADA — block
-  const latestSigning = sale.signingSlots[0];
-  if (latestSigning.status !== "COMPLETADA") {
-    throw new ServiceError(
-      "No se puede registrar el pago: la firma de escritura no está completada. Complete la firma antes de registrar pagos."
-    );
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,6 +16,8 @@ interface PayInstallmentParams {
   installmentId: string;
   amount: number;
   currency: "USD" | "ARS";
+  paymentMethod?: "EFECTIVO" | "TRANSFERENCIA";
+  bankAccountId?: string | null;
   manualRate?: number | null;
   notes?: string | null;
   date: Date;
@@ -65,6 +28,8 @@ interface PayExtraChargeParams {
   extraChargeId: string;
   amount: number;
   currency: "USD" | "ARS";
+  paymentMethod?: "EFECTIVO" | "TRANSFERENCIA";
+  bankAccountId?: string | null;
   manualRate?: number | null;
   notes?: string | null;
   date: Date;
@@ -75,6 +40,8 @@ interface RecordDeliveryParams {
   saleId: string;
   amount: number;
   currency: "USD" | "ARS";
+  paymentMethod?: "EFECTIVO" | "TRANSFERENCIA";
+  bankAccountId?: string | null;
   manualRate?: number | null;
   notes?: string | null;
   date: Date;
@@ -86,15 +53,7 @@ interface RecordDeliveryParams {
 // ---------------------------------------------------------------------------
 
 export async function payInstallment(params: PayInstallmentParams): Promise<void> {
-  const { installmentId, amount, currency, manualRate, notes, date, userId } = params;
-
-  // Signing gate — block payments when sale's signing is not completed
-  const installmentForGate = await prisma.installment.findUnique({
-    where: { id: installmentId },
-    select: { saleId: true },
-  });
-  if (!installmentForGate) throw new ServiceError("Cuota no encontrada");
-  await checkSigningGate(installmentForGate.saleId);
+  const { installmentId, amount, currency, paymentMethod, bankAccountId, manualRate, notes, date, userId } = params;
 
   let cashMovementId: string | null = null;
   let saleId: string;
@@ -123,9 +82,9 @@ export async function payInstallment(params: PayInstallmentParams): Promise<void
         throw new ServiceError("La cuota ya fue pagada o no esta pendiente");
       }
 
-      // Validate payment does not exceed remaining balance
-      const remaining = Number(installment.amount) - Number(installment.paidAmount);
-      if (amount > remaining) {
+      // Validate payment does not exceed remaining balance (round to avoid floating-point drift)
+      const remaining = Math.round((Number(installment.amount) - Number(installment.paidAmount)) * 100) / 100;
+      if (Math.round(amount * 100) / 100 > remaining) {
         throw new ServiceError(
           `El monto (${amount}) supera el saldo pendiente de la cuota (${remaining.toFixed(2)})`
         );
@@ -144,6 +103,8 @@ export async function payInstallment(params: PayInstallmentParams): Promise<void
           developmentId: installment.sale.lot.developmentId,
           date,
           type: "CUOTA",
+          paymentMethod: paymentMethod ?? null,
+          bankAccountId: paymentMethod === "TRANSFERENCIA" ? (bankAccountId ?? null) : null,
           concept: `CUOTA ${installment.installmentNumber} - LOTE ${lotNumber}`,
           detail: notes || null,
           usdIncome: isUSD ? amount : null,
@@ -157,8 +118,8 @@ export async function payInstallment(params: PayInstallmentParams): Promise<void
       });
 
       // 3. Update installment
-      const newPaidAmount = Number(installment.paidAmount) + amount;
-      const isFullyPaid = newPaidAmount >= Number(installment.amount);
+      const newPaidAmount = Math.round((Number(installment.paidAmount) + amount) * 100) / 100;
+      const isFullyPaid = newPaidAmount >= Math.round(Number(installment.amount) * 100) / 100;
 
       await tx.installment.update({
         where: { id: installmentId },
@@ -223,15 +184,7 @@ export async function payInstallment(params: PayInstallmentParams): Promise<void
 // ---------------------------------------------------------------------------
 
 export async function payExtraCharge(params: PayExtraChargeParams): Promise<void> {
-  const { extraChargeId, amount, currency, manualRate, notes, date, userId } = params;
-
-  // Signing gate — block payments when sale's signing is not completed
-  const extraChargeForGate = await prisma.extraCharge.findUnique({
-    where: { id: extraChargeId },
-    select: { saleId: true },
-  });
-  if (!extraChargeForGate) throw new ServiceError("Cargo extra no encontrado");
-  await checkSigningGate(extraChargeForGate.saleId);
+  const { extraChargeId, amount, currency, paymentMethod, bankAccountId, manualRate, notes, date, userId } = params;
 
   let cashMovementId: string | null = null;
   let saleId: string;
@@ -260,9 +213,9 @@ export async function payExtraCharge(params: PayExtraChargeParams): Promise<void
         throw new ServiceError("El cargo extra ya fue pagado o no esta pendiente");
       }
 
-      // Validate payment does not exceed remaining balance
-      const remaining = Number(extraCharge.amount) - Number(extraCharge.paidAmount);
-      if (amount > remaining) {
+      // Validate payment does not exceed remaining balance (round to avoid floating-point drift)
+      const remaining = Math.round((Number(extraCharge.amount) - Number(extraCharge.paidAmount)) * 100) / 100;
+      if (Math.round(amount * 100) / 100 > remaining) {
         throw new ServiceError(
           `El monto (${amount}) supera el saldo pendiente del refuerzo (${remaining.toFixed(2)})`
         );
@@ -281,6 +234,8 @@ export async function payExtraCharge(params: PayExtraChargeParams): Promise<void
           developmentId,
           date,
           type: "CUOTA",
+          paymentMethod: paymentMethod ?? null,
+          bankAccountId: paymentMethod === "TRANSFERENCIA" ? (bankAccountId ?? null) : null,
           concept: `REFUERZO - ${extraCharge.description}`,
           detail: notes || null,
           usdIncome: isUSD ? amount : null,
@@ -294,8 +249,8 @@ export async function payExtraCharge(params: PayExtraChargeParams): Promise<void
       });
 
       // 3. Update extra charge
-      const newPaidAmount = Number(extraCharge.paidAmount) + amount;
-      const isFullyPaid = newPaidAmount >= Number(extraCharge.amount);
+      const newPaidAmount = Math.round((Number(extraCharge.paidAmount) + amount) * 100) / 100;
+      const isFullyPaid = newPaidAmount >= Math.round(Number(extraCharge.amount) * 100) / 100;
 
       await tx.extraCharge.update({
         where: { id: extraChargeId },
@@ -345,7 +300,7 @@ export async function payExtraCharge(params: PayExtraChargeParams): Promise<void
 // ---------------------------------------------------------------------------
 
 export async function recordDeliveryPayment(params: RecordDeliveryParams): Promise<void> {
-  const { saleId, amount, currency, manualRate, notes, date, userId } = params;
+  const { saleId, amount, currency, paymentMethod, bankAccountId, manualRate, notes, date, userId } = params;
 
   // Fetch sale with lot context
   const sale = await prisma.sale.findUnique({
@@ -366,6 +321,8 @@ export async function recordDeliveryPayment(params: RecordDeliveryParams): Promi
         developmentId: sale.lot.developmentId,
         date,
         type: "ENTREGA",
+        paymentMethod: paymentMethod ?? null,
+        bankAccountId: paymentMethod === "TRANSFERENCIA" ? (bankAccountId ?? null) : null,
         concept: `ENTREGA - LOTE ${sale.lot.lotNumber}`,
         detail: notes || null,
         usdIncome: isUSD ? amount : null,

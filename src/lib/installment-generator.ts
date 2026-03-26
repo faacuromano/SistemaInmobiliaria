@@ -14,6 +14,7 @@ interface GenerateInstallmentsParams {
   firstInstallmentMonth: string; // "YYYY-MM"
   collectionDay: number;
   currency: Currency;
+  manualAmounts?: number[]; // For manual mode: individual amount per installment
 }
 
 interface InstallmentData {
@@ -44,6 +45,7 @@ export function generateInstallments(
     firstInstallmentMonth,
     collectionDay,
     currency,
+    manualAmounts,
   } = params;
 
   // Parse "YYYY-MM" into year and 0-indexed month
@@ -54,8 +56,9 @@ export function generateInstallments(
   const installments: InstallmentData[] = [];
 
   for (let i = 1; i <= totalInstallments; i++) {
-    const amount =
-      i === 1 && firstInstallmentAmount != null
+    const amount = manualAmounts
+      ? manualAmounts[i - 1]
+      : i === 1 && firstInstallmentAmount != null
         ? firstInstallmentAmount
         : regularInstallmentAmount;
 

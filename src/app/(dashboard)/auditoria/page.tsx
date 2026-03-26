@@ -26,9 +26,9 @@ export default async function AuditoriaPage({ searchParams }: Props) {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader
-        title="Auditoria"
+        title="Registros"
         description="Registro de actividad y operaciones del sistema"
         icon={ClipboardList}
         accentColor="border-orange-600"

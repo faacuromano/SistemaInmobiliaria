@@ -8,12 +8,16 @@ interface FindAllParams {
   developmentId?: string;
   saleId?: string;
   search?: string;
+  paymentMethod?: string;
+  bankAccountId?: string;
 }
 
 interface SummaryParams {
   dateFrom?: Date;
   dateTo?: Date;
   developmentId?: string;
+  paymentMethod?: string;
+  bankAccountId?: string;
 }
 
 export const cashMovementModel = {
@@ -31,16 +35,23 @@ export const cashMovementModel = {
     if (params?.search) {
       where.concept = { contains: params.search, mode: "insensitive" };
     }
+    if (params?.paymentMethod === "EFECTIVO") {
+      where.paymentMethod = "EFECTIVO";
+    } else if (params?.paymentMethod === "TRANSFERENCIA") {
+      where.paymentMethod = "TRANSFERENCIA";
+    }
+    if (params?.bankAccountId) where.bankAccountId = params.bankAccountId;
 
     return prisma.cashMovement.findMany({
       where,
       include: {
         development: { select: { name: true } },
         person: { select: { firstName: true, lastName: true } },
-        sale: { select: { id: true } },
+        sale: { select: { id: true, lot: { select: { lotNumber: true } } } },
         registeredBy: { select: { name: true } },
         installment: { select: { installmentNumber: true } },
         extraCharge: { select: { description: true } },
+        bankAccount: { select: { name: true } },
       },
       orderBy: { date: "desc" },
     });
@@ -82,6 +93,12 @@ export const cashMovementModel = {
       if (params.dateTo) where.date.lte = params.dateTo;
     }
     if (params?.developmentId) where.developmentId = params.developmentId;
+    if (params?.paymentMethod === "EFECTIVO") {
+      where.paymentMethod = "EFECTIVO";
+    } else if (params?.paymentMethod === "TRANSFERENCIA") {
+      where.paymentMethod = "TRANSFERENCIA";
+    }
+    if (params?.bankAccountId) where.bankAccountId = params.bankAccountId;
 
     const result = await prisma.cashMovement.aggregate({
       where,

@@ -86,6 +86,26 @@ export const SigningStatus = {
 export type SigningStatus =
   (typeof SigningStatus)[keyof typeof SigningStatus];
 
+export const InstallmentMode = {
+  AUTOMATICO: "AUTOMATICO",
+  MANUAL: "MANUAL",
+} as const;
+export type InstallmentMode =
+  (typeof InstallmentMode)[keyof typeof InstallmentMode];
+
+export const CesionType = {
+  GRATIS: "GRATIS",
+  CANJE: "CANJE",
+} as const;
+export type CesionType = (typeof CesionType)[keyof typeof CesionType];
+
+export const PaymentMethod = {
+  EFECTIVO: "EFECTIVO",
+  TRANSFERENCIA: "TRANSFERENCIA",
+} as const;
+export type PaymentMethod =
+  (typeof PaymentMethod)[keyof typeof PaymentMethod];
+
 export const MovementType = {
   CUOTA: "CUOTA",
   ENTREGA: "ENTREGA",

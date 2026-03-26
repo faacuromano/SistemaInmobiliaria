@@ -6,7 +6,8 @@ import { PersonsTable } from "./_components/persons-table";
 import { Button } from "@/components/ui/button";
 import { Plus, Users } from "lucide-react";
 import Link from "next/link";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import type { PersonType } from "@/generated/prisma/client/client";
 
 interface Props {
@@ -28,10 +29,10 @@ export default async function PersonsPage({ searchParams }: Props) {
     isActive: showInactive ? undefined : true,
   });
 
-  const canManage = hasPermission(session.user.role, "persons:manage");
+  const canManage = await checkPermissionDb(session.user.role as Role, "persons:manage");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHeader title="Personas" description="Gestión de clientes y proveedores" icon={Users} accentColor="border-emerald-600">
         {canManage && (
           <Button asChild>
@@ -42,18 +43,18 @@ export default async function PersonsPage({ searchParams }: Props) {
           </Button>
         )}
       </PageHeader>
-      <div className="grid grid-cols-3 gap-5">
-        <div className="rounded-md border bg-card p-3 shadow-sm">
-          <p className="text-sm text-muted-foreground">Total Personas</p>
-          <p className="text-2xl font-bold">{persons.length}</p>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
+        <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <p className="text-[13px] font-medium text-muted-foreground">Total Personas</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight">{persons.length}</p>
         </div>
-        <div className="rounded-md border bg-card p-3 shadow-sm">
-          <p className="text-sm text-muted-foreground">Clientes</p>
-          <p className="text-2xl font-bold">{persons.filter(p => p.type === 'CLIENTE' || p.type === 'AMBOS').length}</p>
+        <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <p className="text-[13px] font-medium text-muted-foreground">Clientes</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight">{persons.filter(p => p.type === 'CLIENTE' || p.type === 'AMBOS').length}</p>
         </div>
-        <div className="rounded-md border bg-card p-3 shadow-sm">
-          <p className="text-sm text-muted-foreground">Proveedores</p>
-          <p className="text-2xl font-bold">{persons.filter(p => p.type === 'PROVEEDOR' || p.type === 'AMBOS').length}</p>
+        <div className="rounded-xl border bg-card p-5 shadow-sm">
+          <p className="text-[13px] font-medium text-muted-foreground">Proveedores</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight">{persons.filter(p => p.type === 'PROVEEDOR' || p.type === 'AMBOS').length}</p>
         </div>
       </div>
       <PersonsFilters />

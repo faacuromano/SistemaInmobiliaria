@@ -22,7 +22,7 @@ import {
 } from "@/lib/constants";
 import type { DevelopmentStatus, DevelopmentType } from "@/types/enums";
 
-// Type for the development data returned from getDevelopments (with _count)
+// Type for the development data returned from getDevelopments (with _count + sold lots)
 type DevelopmentRow = {
   id: string;
   name: string;
@@ -32,6 +32,7 @@ type DevelopmentRow = {
   type: DevelopmentType;
   status: DevelopmentStatus;
   _count: { lots: number };
+  lots: { id: string }[]; // lots with sales
 };
 
 interface Props {
@@ -99,32 +100,48 @@ export function DevelopmentsTable({ developments, canManage }: Props) {
       key: "actions",
       label: "",
       className: "w-12",
-      render: (dev) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => router.push(`/desarrollos/${dev.slug}/editar`)}>
-              <Pencil className="mr-2 h-4 w-4" />
-              Editar
-            </DropdownMenuItem>
-            <ConfirmDialog
-              title="Eliminar desarrollo"
-              description={`¿Estás seguro de eliminar "${dev.name}"? Esta acción no se puede deshacer.`}
-              onConfirm={() => handleDelete(dev.id)}
-              trigger={
-                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+      render: (dev) => {
+        const soldCount = dev.lots.length;
+        const canDelete = soldCount === 0;
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => router.push(`/desarrollos/${dev.slug}/editar`)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              {canDelete ? (
+                <ConfirmDialog
+                  title="Eliminar desarrollo"
+                  description={
+                    dev._count.lots > 0
+                      ? `¿Estás seguro de eliminar "${dev.name}" y sus ${dev._count.lots} lote(s)? Esta acción no se puede deshacer.`
+                      : `¿Estás seguro de eliminar "${dev.name}"? Esta acción no se puede deshacer.`
+                  }
+                  onConfirm={() => handleDelete(dev.id)}
+                  trigger={
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Eliminar
+                    </DropdownMenuItem>
+                  }
+                />
+              ) : (
+                <DropdownMenuItem disabled>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
+                  Eliminar ({soldCount} lote(s) vendido(s))
                 </DropdownMenuItem>
-              }
-            />
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        );
+      },
     });
   }
 

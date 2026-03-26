@@ -3,16 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth-guard";
 import { cashBalanceModel } from "@/server/models/cash-balance.model";
-import { prisma } from "@/lib/prisma";
+import { developmentModel } from "@/server/models/development.model";
+import { serializeDecimals } from "@/lib/serialize";
 import type { ActionResult } from "@/types/actions";
 
-// Serialize Prisma Decimal fields to plain numbers for client consumption
-function serializeBalance(balance: Record<string, unknown>) {
-  return {
-    ...balance,
-    arsBalance: balance.arsBalance ? Number(balance.arsBalance) : 0,
-    usdBalance: balance.usdBalance ? Number(balance.usdBalance) : 0,
-  };
+type BalanceRow = Awaited<ReturnType<typeof cashBalanceModel.findAll>>[number];
+
+function serializeBalance(balance: BalanceRow) {
+  return serializeDecimals(balance, ["arsBalance", "usdBalance"]);
 }
 
 /**
@@ -81,9 +79,7 @@ export async function generateAllBalances(
   await requirePermission("cash:manage");
 
   try {
-    const developments = await prisma.development.findMany({
-      select: { id: true },
-    });
+    const developments = await developmentModel.findAllIds();
 
     // Calculate balance for each development
     for (const dev of developments) {

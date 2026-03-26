@@ -114,6 +114,7 @@ model User {
   sellerSales      Sale[]             @relation("SaleSeller")
   sellerSignings   SigningSlot[]      @relation("SigningSeller")
   notifications    Notification[]
+  createdTransfers SaleTransfer[]     @relation("TransferCreatedBy")
 
   @@map("users")
 }
@@ -297,10 +298,12 @@ model Person {
   createdAt  DateTime   @default(now()) @map("created_at")
   updatedAt  DateTime   @updatedAt @map("updated_at")
 
-  sales         Sale[]
-  cashMovements CashMovement[] @relation("PersonMovements")
-  receipts      PaymentReceipt[]
-  createdBy     User?          @relation("PersonCreatedBy", fields: [createdById], references: [id])
+  sales            Sale[]
+  cashMovements    CashMovement[]   @relation("PersonMovements")
+  receipts         PaymentReceipt[]
+  transfersFrom    SaleTransfer[]   @relation("TransferFrom")
+  transfersTo      SaleTransfer[]   @relation("TransferTo")
+  createdBy        User?            @relation("PersonCreatedBy", fields: [createdById], references: [id])
 
   @@index([type])
   @@index([isActive])
@@ -324,6 +327,16 @@ enum Currency {
   ARS
 }
 
+enum InstallmentMode {
+  AUTOMATICO  // Cuotas calculadas automáticamente (distribución uniforme)
+  MANUAL      // Cada cuota tiene un monto ingresado manualmente
+}
+
+enum CesionType {
+  GRATIS      // Cesión gratuita
+  CANJE       // Canje por servicios, publicidad, etc.
+}
+
 model Sale {
   id                       String     @id @default(cuid())
   groupId                  String?    @map("group_id") // Multi-lote: ventas con mismo groupId comparten plan de pago
@@ -342,7 +355,10 @@ model Sale {
   collectionDay            Int?       @map("collection_day")
   commissionAmount         Decimal?   @db.Decimal(12, 2) @map("commission_amount")
   exchangeRateOverride     Decimal?   @db.Decimal(10, 2) @map("exchange_rate_override")
+  installmentMode          InstallmentMode @default(AUTOMATICO) @map("installment_mode")
   status                   SaleStatus @default(ACTIVA)
+  cesionType               CesionType? @map("cesion_type") // Solo para CESION: GRATIS o CANJE
+  cesionDetail             String?     @map("cesion_detail") // Detalle del canje: "Servicios", "Publicidad", etc.
   notes                    String?    @db.Text // Entregas de propiedad, permutas, etc.
   paymentWindow            String?    @map("payment_window") // Ventana de pago: "del 1 al 20", "vence el 30", etc.
   createdById              String     @map("created_by_id")
@@ -358,12 +374,42 @@ model Sale {
   cashMovements CashMovement[]
   receipts      PaymentReceipt[]
   signingSlots  SigningSlot[]
+  transfers     SaleTransfer[]
 
   @@index([groupId])
   @@index([status])
   @@index([personId])
   @@index([sellerId])
   @@map("sales")
+}
+
+// ============================================================================
+// TRANSFERENCIA DE VENTAS (Cambio de titular)
+// ============================================================================
+// Registra cuando un cliente A transfiere su venta a un cliente B.
+// Guarda snapshot de cuotas al momento de la transferencia.
+
+model SaleTransfer {
+  id                String   @id @default(cuid())
+  saleId            String   @map("sale_id")
+  fromPersonId      String   @map("from_person_id")
+  toPersonId        String   @map("to_person_id")
+  transferDate      DateTime @map("transfer_date")
+  installmentSnapshot Json?  @map("installment_snapshot") // Estado de cuotas al momento de transferencia
+  renegotiated      Boolean  @default(false) // Si se renegoció el plan de cuotas
+  notes             String?  @db.Text
+  createdById       String   @map("created_by_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  sale       Sale   @relation(fields: [saleId], references: [id])
+  fromPerson Person @relation("TransferFrom", fields: [fromPersonId], references: [id])
+  toPerson   Person @relation("TransferTo", fields: [toPersonId], references: [id])
+  createdBy  User   @relation("TransferCreatedBy", fields: [createdById], references: [id])
+
+  @@index([saleId])
+  @@index([fromPersonId])
+  @@index([toPersonId])
+  @@map("sale_transfers")
 }
 
 // ============================================================================
@@ -448,8 +494,31 @@ model ExtraCharge {
 }
 
 // ============================================================================
+// CUENTAS BANCARIAS (Configurables por el usuario)
+// ============================================================================
+
+model BankAccount {
+  id        String   @id @default(cuid())
+  name      String   // "Bco. Nación", "Bco. BBVA", "Mercado Pago"
+  cbu       String?  // CBU/CVU opcional
+  alias     String?  // Alias opcional
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  cashMovements CashMovement[]
+
+  @@map("bank_accounts")
+}
+
+// ============================================================================
 // CAJA - MOVIMIENTOS UNIFICADOS
 // ============================================================================
+
+enum PaymentMethod {
+  EFECTIVO
+  TRANSFERENCIA
+}
 
 enum MovementType {
   CUOTA           // Pago de cuota
@@ -483,6 +552,8 @@ model CashMovement {
 
   date           DateTime
   type           MovementType
+  paymentMethod  PaymentMethod? @map("payment_method")
+  bankAccountId  String?        @map("bank_account_id")
   concept        String       // "CUOTA 5 LOTE 194", "SUELDO MARCOS"
   detail         String?      @db.Text
 
@@ -504,6 +575,7 @@ model CashMovement {
   installment  Installment?  @relation(fields: [installmentId], references: [id])
   extraCharge  ExtraCharge?  @relation(fields: [extraChargeId], references: [id])
   exchangeRate ExchangeRate? @relation(fields: [exchangeRateId], references: [id])
+  bankAccount  BankAccount?  @relation(fields: [bankAccountId], references: [id])
   registeredBy User          @relation("RegisteredBy", fields: [registeredById], references: [id])
   receipt      PaymentReceipt?
 

@@ -1,21 +1,36 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { XCircle } from "lucide-react";
+import { XCircle, ArrowRightLeft } from "lucide-react";
 import { cancelSale } from "@/server/actions/sale.actions";
 import { SaleStatus } from "@/types/enums";
+import { TransferSaleDialog } from "./transfer-sale-dialog";
 
 interface SaleActionsProps {
   saleId: string;
   saleStatus: string;
+  currentPersonName?: string;
+  persons?: Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    dni: string | null;
+  }>;
 }
 
-export function SaleActions({ saleId, saleStatus }: SaleActionsProps) {
+export function SaleActions({
+  saleId,
+  saleStatus,
+  currentPersonName = "",
+  persons = [],
+}: SaleActionsProps) {
   const router = useRouter();
+  const [showTransfer, setShowTransfer] = useState(false);
 
   if (saleStatus !== SaleStatus.ACTIVA) {
     return null;
@@ -40,19 +55,33 @@ export function SaleActions({ saleId, saleStatus }: SaleActionsProps) {
             Operaciones disponibles para esta venta
           </p>
         </div>
-        <ConfirmDialog
-          title="Cancelar Venta"
-          description="Esta accion cancelara la venta y devolvera el lote al estado disponible. Los pagos realizados no seran revertidos automaticamente. Esta accion no se puede deshacer."
-          onConfirm={handleCancelSale}
-          variant="destructive"
-          trigger={
-            <Button variant="destructive">
-              <XCircle className="mr-2 h-4 w-4" />
-              Cancelar Venta
-            </Button>
-          }
-        />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowTransfer(true)}>
+            <ArrowRightLeft className="mr-2 h-4 w-4" />
+            Transferir Lote
+          </Button>
+          <ConfirmDialog
+            title="Cancelar Venta"
+            description="Esta accion cancelara la venta y devolvera el lote al estado disponible. Los pagos realizados no seran revertidos automaticamente. Esta accion no se puede deshacer."
+            onConfirm={handleCancelSale}
+            variant="destructive"
+            trigger={
+              <Button variant="destructive">
+                <XCircle className="mr-2 h-4 w-4" />
+                Cancelar Venta
+              </Button>
+            }
+          />
+        </div>
       </CardContent>
+
+      <TransferSaleDialog
+        open={showTransfer}
+        onOpenChange={setShowTransfer}
+        saleId={saleId}
+        currentPersonName={currentPersonName}
+        persons={persons}
+      />
     </Card>
   );
 }

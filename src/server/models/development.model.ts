@@ -22,8 +22,27 @@ export const developmentModel = {
 
     return prisma.development.findMany({
       where,
-      include: { _count: { select: { lots: true } } },
+      include: {
+        _count: { select: { lots: true } },
+        lots: {
+          where: { sale: { isNot: null } },
+          select: { id: true },
+        },
+      },
       orderBy: { createdAt: "desc" },
+    });
+  },
+
+  async findAllIds() {
+    return prisma.development.findMany({
+      select: { id: true },
+    });
+  },
+
+  async findOptions() {
+    return prisma.development.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
     });
   },
 
@@ -75,7 +94,27 @@ export const developmentModel = {
   },
 
   async delete(id: string) {
-    return prisma.development.delete({ where: { id } });
+    // Nullify related entities, delete lots, then delete development
+    await prisma.$transaction([
+      prisma.cashMovement.updateMany({
+        where: { developmentId: id },
+        data: { developmentId: null },
+      }),
+      prisma.cashBalance.deleteMany({
+        where: { developmentId: id },
+      }),
+      prisma.signingSlot.updateMany({
+        where: { developmentId: id },
+        data: { developmentId: null },
+      }),
+      prisma.lotTag.deleteMany({
+        where: { lot: { developmentId: id } },
+      }),
+      prisma.lot.deleteMany({
+        where: { developmentId: id },
+      }),
+      prisma.development.delete({ where: { id } }),
+    ]);
   },
 
   async slugExists(slug: string, excludeId?: string) {

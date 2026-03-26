@@ -7,7 +7,8 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Pencil, MapPin, ExternalLink } from "lucide-react";
-import { hasPermission } from "@/lib/rbac";
+import { checkPermissionDb } from "@/lib/rbac";
+import type { Role } from "@/types/enums";
 import {
   DEVELOPMENT_STATUS_LABELS,
   DEVELOPMENT_STATUS_COLORS,
@@ -29,8 +30,10 @@ export default async function DevelopmentDetailPage({ params }: Props) {
 
   if (!development) notFound();
 
-  const canManage = hasPermission(session.user.role, "developments:manage");
-  const canManageLots = hasPermission(session.user.role, "lots:manage");
+  const [canManage, canManageLots] = await Promise.all([
+    checkPermissionDb(session.user.role as Role, "developments:manage"),
+    checkPermissionDb(session.user.role as Role, "lots:manage"),
+  ]);
   const allTags = await getTags();
   const lotsByStatus = development.lots.reduce((acc, lot) => {
     acc[lot.status] = (acc[lot.status] || 0) + 1;

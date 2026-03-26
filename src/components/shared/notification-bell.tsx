@@ -16,6 +16,7 @@ import {
 import {
   markNotificationRead,
   markAllNotificationsRead,
+  resolveNotificationUrl,
 } from "@/server/actions/notification.actions";
 import { cn } from "@/lib/utils";
 
@@ -86,12 +87,17 @@ export function NotificationBell({
     if (!notification.read) {
       handleMarkAsRead(notification.id);
     }
-    if (
-      notification.referenceType === "Message" &&
-      notification.referenceId
-    ) {
-      router.push("/mensajes");
-    }
+    if (!notification.referenceType) return;
+
+    startTransition(async () => {
+      const url = await resolveNotificationUrl(
+        notification.referenceType!,
+        notification.referenceId
+      );
+      if (url) {
+        router.push(url);
+      }
+    });
   };
 
   return (

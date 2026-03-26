@@ -5,21 +5,19 @@ import { requirePermission } from "@/lib/auth-guard";
 import { exchangeRateModel } from "@/server/models/exchange-rate.model";
 import { fetchDolarApiRates } from "@/lib/exchange-rate";
 import { manualExchangeRateSchema } from "@/schemas/exchange-rate.schema";
-import { logAction } from "@/server/actions/audit-log.actions";
+import { logAction } from "@/lib/audit";
+import { serializeDecimals } from "@/lib/serialize";
 import type { ActionResult } from "@/types/actions";
 
-// Serialize Decimal fields to numbers for client
-function serializeRate(rate: Record<string, unknown> | null) {
+type ExchangeRateRow = NonNullable<Awaited<ReturnType<typeof exchangeRateModel.findByDate>>>;
+
+const RATE_DECIMAL_FIELDS: (keyof ExchangeRateRow)[] = [
+  "officialBuy", "officialSell", "blueBuy", "blueSell", "cryptoBuy", "cryptoSell",
+];
+
+function serializeRate(rate: ExchangeRateRow | null) {
   if (!rate) return null;
-  return {
-    ...rate,
-    officialBuy: rate.officialBuy ? Number(rate.officialBuy) : null,
-    officialSell: rate.officialSell ? Number(rate.officialSell) : null,
-    blueBuy: rate.blueBuy ? Number(rate.blueBuy) : null,
-    blueSell: rate.blueSell ? Number(rate.blueSell) : null,
-    cryptoBuy: rate.cryptoBuy ? Number(rate.cryptoBuy) : null,
-    cryptoSell: rate.cryptoSell ? Number(rate.cryptoSell) : null,
-  };
+  return serializeDecimals(rate, RATE_DECIMAL_FIELDS);
 }
 
 /**

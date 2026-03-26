@@ -1,16 +1,199 @@
 import { prisma } from "@/lib/prisma";
 import { logAction } from "@/lib/audit";
 import { ServiceError } from "@/lib/service-error";
+import { signingModel } from "@/server/models/signing.model";
+import type { SigningStatus } from "@/types/enums";
+
+// ---------------------------------------------------------------------------
+// Create
+// ---------------------------------------------------------------------------
+
+interface CreateSigningData {
+  date: Date;
+  time: string;
+  endTime?: string | null;
+  lotInfo: string;
+  clientName?: string | null;
+  lotNumbers?: string | null;
+  developmentId?: string | null;
+  sellerId?: string | null;
+  notes?: string | null;
+  saleId?: string | null;
+}
+
+export async function createSigning(
+  data: CreateSigningData,
+  userId: string
+) {
+  const signing = await signingModel.create({
+    date: data.date,
+    time: data.time,
+    endTime: data.endTime || null,
+    lotInfo: data.lotInfo,
+    clientName: data.clientName || null,
+    lotNumbers: data.lotNumbers || null,
+    developmentId: data.developmentId || null,
+    sellerId: data.sellerId || null,
+    notes: data.notes || null,
+    createdById: userId,
+    saleId: data.saleId || null,
+  });
+
+  await logAction("SigningSlot", signing.id, "CREATE", {
+    newData: { date: data.date, time: data.time, lotInfo: data.lotInfo, saleId: data.saleId },
+  }, userId);
+
+  return signing;
+}
+
+// ---------------------------------------------------------------------------
+// Update
+// ---------------------------------------------------------------------------
+
+interface UpdateSigningData {
+  date: Date;
+  time: string;
+  endTime?: string | null;
+  lotInfo: string;
+  clientName?: string | null;
+  lotNumbers?: string | null;
+  developmentId?: string | null;
+  sellerId?: string | null;
+  notes?: string | null;
+  saleId?: string | null;
+  status?: string;
+}
+
+export async function updateSigning(
+  id: string,
+  data: UpdateSigningData,
+  userId: string
+): Promise<void> {
+  await signingModel.update(id, {
+    date: data.date,
+    time: data.time,
+    endTime: data.endTime || null,
+    lotInfo: data.lotInfo,
+    clientName: data.clientName || null,
+    lotNumbers: data.lotNumbers || null,
+    developmentId: data.developmentId || null,
+    sellerId: data.sellerId || null,
+    notes: data.notes || null,
+    saleId: data.saleId || null,
+    status: data.status,
+  });
+
+  await logAction("SigningSlot", id, "UPDATE", {
+    newData: { date: data.date, time: data.time, lotInfo: data.lotInfo, status: data.status },
+  }, userId);
+}
+
+// ---------------------------------------------------------------------------
+// Update Status (with COMPLETADA special handling)
+// ---------------------------------------------------------------------------
+
+export async function updateSigningStatus(
+  id: string,
+  status: SigningStatus,
+  userId: string
+): Promise<void> {
+  const signing = await signingModel.findById(id);
+  if (!signing) throw new ServiceError("Turno de firma no encontrado");
+
+  if (status === "COMPLETADA") {
+    await completeSigningSlot({ signingId: id, userId });
+  } else {
+    await signingModel.updateStatus(id, status);
+    await logAction("SigningSlot", id, "UPDATE", {
+      oldData: { status: signing.status },
+      newData: { status },
+    }, userId);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Delete
+// ---------------------------------------------------------------------------
+
+export async function deleteSigning(id: string, userId: string): Promise<void> {
+  const signing = await signingModel.findById(id);
+  if (!signing) throw new ServiceError("Turno de firma no encontrado");
+
+  await signingModel.delete(id);
+
+  await logAction("SigningSlot", id, "DELETE", {
+    oldData: { lotInfo: signing.lotInfo, date: signing.date, time: signing.time },
+  }, userId);
+}
+
+// ---------------------------------------------------------------------------
+// Link/Unlink Sale
+// ---------------------------------------------------------------------------
+
+export async function linkSigningToSale(
+  signingId: string,
+  saleId: string,
+  userId: string
+): Promise<void> {
+  const signing = await signingModel.findById(signingId);
+  if (!signing) throw new ServiceError("Turno de firma no encontrado");
+
+  await signingModel.update(signingId, { saleId });
+
+  await logAction("SigningSlot", signingId, "UPDATE", {
+    oldData: { saleId: signing.saleId },
+    newData: { saleId },
+  }, userId);
+}
+
+export async function unlinkSigningFromSale(
+  signingId: string,
+  userId: string
+): Promise<void> {
+  const signing = await signingModel.findById(signingId);
+  if (!signing) throw new ServiceError("Turno de firma no encontrado");
+
+  await signingModel.update(signingId, { saleId: null });
+
+  await logAction("SigningSlot", signingId, "UPDATE", {
+    oldData: { saleId: signing.saleId },
+    newData: { saleId: null },
+  }, userId);
+}
+
+// ---------------------------------------------------------------------------
+// Unlinked signings query
+// ---------------------------------------------------------------------------
+
+export async function getUnlinkedSignings(developmentId: string) {
+  return signingModel.findAll({
+    developmentId,
+  }).then((signings) =>
+    signings
+      .filter((s) => !s.sale)
+      .map((s) => ({
+        id: s.id,
+        clientName: s.clientName,
+        lotInfo: s.lotInfo,
+        date: s.date,
+        time: s.time,
+        status: s.status,
+      }))
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Complete Signing (atomic status + commission creation)
+// ---------------------------------------------------------------------------
 
 interface CompleteSigningParams {
   signingId: string;
   userId: string;
 }
 
-export async function completeSigningSlot(params: CompleteSigningParams): Promise<void> {
+async function completeSigningSlot(params: CompleteSigningParams): Promise<void> {
   const { signingId, userId } = params;
 
-  // 1. Fetch signing with linked sale data inside the transaction for consistency
   await prisma.$transaction(async (tx) => {
     const signing = await tx.signingSlot.findUnique({
       where: { id: signingId },
@@ -37,21 +220,18 @@ export async function completeSigningSlot(params: CompleteSigningParams): Promis
 
     if (!signing) throw new ServiceError("Turno de firma no encontrado");
 
-    // 2. Update signing status to COMPLETADA
     await tx.signingSlot.update({
       where: { id: signingId },
       data: { status: "COMPLETADA" },
     });
 
-    // 3. Auto-create commission if sale is linked and has commissionAmount > 0
     if (!signing.sale) return;
 
     const sale = signing.sale;
     const commissionAmount = sale.commissionAmount ? Number(sale.commissionAmount) : 0;
 
-    if (commissionAmount <= 0) return; // Silent skip — no warning needed
+    if (commissionAmount <= 0) return;
 
-    // 4. Idempotency check — skip if commission already exists for this sale
     const existingCommission = await tx.cashMovement.findFirst({
       where: {
         type: "COMISION",
@@ -60,9 +240,8 @@ export async function completeSigningSlot(params: CompleteSigningParams): Promis
       select: { id: true },
     });
 
-    if (existingCommission) return; // Already has commission — skip
+    if (existingCommission) return;
 
-    // 5. Create COMISION CashMovement
     const isUSD = sale.currency === "USD";
     const sellerName = sale.seller
       ? `${sale.seller.name} ${sale.seller.lastName}`.trim()
@@ -71,7 +250,7 @@ export async function completeSigningSlot(params: CompleteSigningParams): Promis
     await tx.cashMovement.create({
       data: {
         saleId: sale.id,
-        personId: null, // Commission goes to seller, not client
+        personId: null,
         developmentId: sale.lot.developmentId,
         date: new Date(),
         type: "COMISION",
@@ -90,7 +269,6 @@ export async function completeSigningSlot(params: CompleteSigningParams): Promis
     });
   });
 
-  // Audit log outside transaction (non-critical — should not block)
   await logAction(
     "SigningSlot",
     signingId,

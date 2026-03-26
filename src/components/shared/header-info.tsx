@@ -89,7 +89,7 @@ export function HeaderInfo({ rates }: Props) {
     <div className="flex items-center gap-3 text-xs text-muted-foreground mr-1">
       <button
         onClick={toggleCurrency}
-        className="flex items-center gap-1 rounded-md px-2 py-1 transition-colors cursor-pointer outline-none bg-primary/10 hover:bg-primary/20 border border-primary/20"
+        className="glass-subtle flex items-center gap-1 rounded-full px-2.5 py-1 transition-colors cursor-pointer outline-none hover:bg-primary/10 border-primary/20"
         title="Cambiar moneda de visualizacion"
       >
         <ArrowLeftRight className="h-3 w-3 text-primary" />
@@ -100,7 +100,7 @@ export function HeaderInfo({ rates }: Props) {
       {rates && displayRate !== null && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1 hover:bg-muted transition-colors cursor-pointer outline-none">
+            <button className="glass-subtle flex items-center gap-1 rounded-full px-2.5 py-1 hover:bg-muted/40 transition-colors cursor-pointer outline-none">
               <DollarSign className="h-3 w-3 text-green-600" />
               <span className="font-medium text-foreground">
                 {fmt(displayRate)}
@@ -141,7 +141,7 @@ export function HeaderInfo({ rates }: Props) {
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      <div className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-1">
+      <div className="glass-subtle flex items-center gap-1 rounded-full px-2.5 py-1">
         <Clock className="h-3 w-3" />
         <span className="font-medium text-foreground tabular-nums">{time}</span>
       </div>

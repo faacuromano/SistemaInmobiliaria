@@ -7,7 +7,11 @@ export const userCreateSchema = z.object({
   lastName: z.string().min(1, "El apellido es requerido").max(100),
   phone: z.string().max(50).optional().or(z.literal("")),
   role: z.nativeEnum(Role),
-  password: z.string().min(6, "Minimo 6 caracteres"),
+  password: z
+    .string()
+    .min(8, "Minimo 8 caracteres")
+    .regex(/[A-Z]/, "Debe contener al menos una mayuscula")
+    .regex(/[0-9]/, "Debe contener al menos un numero"),
 });
 
 export const userUpdateSchema = z.object({
@@ -21,7 +25,11 @@ export const userUpdateSchema = z.object({
 
 export const passwordChangeSchema = z.object({
   id: z.string().min(1),
-  password: z.string().min(6, "Minimo 6 caracteres"),
+  password: z
+    .string()
+    .min(8, "Minimo 8 caracteres")
+    .regex(/[A-Z]/, "Debe contener al menos una mayuscula")
+    .regex(/[0-9]/, "Debe contener al menos un numero"),
 });
 
 export type UserCreateInput = z.input<typeof userCreateSchema>;

@@ -12,22 +12,20 @@ export function PageHeader({
   title,
   description,
   icon: Icon,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  accentColor,
   children,
 }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between rounded-md border bg-card px-4 py-3 shadow-sm">
+    <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
         {Icon && (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10">
-            <Icon className="h-[18px] w-[18px] text-primary" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
           </div>
         )}
         <div>
-          <h1 className="text-lg font-semibold">{title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
           {description && (
-            <p className="text-[13px] text-muted-foreground">{description}</p>
+            <p className="text-sm text-muted-foreground">{description}</p>
           )}
         </div>
       </div>

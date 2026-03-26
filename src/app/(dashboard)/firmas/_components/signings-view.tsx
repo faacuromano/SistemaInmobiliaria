@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CalendarDays, List, ChevronLeft, ChevronRight } from "lucide-react";
@@ -28,7 +28,17 @@ type SigningRow = {
   seller: { name: string; lastName: string } | null;
   developmentId: string | null;
   sellerId: string | null;
+  saleId?: string | null;
 };
+
+interface SaleContext {
+  saleId: string;
+  clientName: string;
+  lotInfo: string;
+  lotNumbers: string;
+  developmentId: string;
+  sellerId: string;
+}
 
 interface Props {
   /** Filtered signings for list view */
@@ -40,6 +50,8 @@ interface Props {
   sellers: Array<{ id: string; name: string }>;
   initialWeekStart: string;
   businessHours: BusinessHoursConfig;
+  /** Pre-fill data when creating a signing from a sale detail page */
+  saleContext?: SaleContext;
 }
 
 /**
@@ -92,6 +104,7 @@ export function SigningsView({
   sellers,
   initialWeekStart,
   businessHours,
+  saleContext,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -102,6 +115,26 @@ export function SigningsView({
   const [editOpen, setEditOpen] = useState(false);
   const [selectedSigning, setSelectedSigning] = useState<SigningRow | null>(null);
   const [createDefaults, setCreateDefaults] = useState<{ date: string; time: string } | null>(null);
+  const [saleDefaults, setSaleDefaults] = useState<SaleContext | undefined>(saleContext);
+
+  // Auto-open create dialog when arriving from sale detail page
+  useEffect(() => {
+    if (saleContext && canManage) {
+      setCreateOpen(true);
+      // Clean URL params without navigation
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("newSigning");
+      params.delete("saleId");
+      params.delete("clientName");
+      params.delete("lotInfo");
+      params.delete("lotNumbers");
+      params.delete("developmentId");
+      params.delete("sellerId");
+      const cleaned = params.toString();
+      router.replace(`${pathname}${cleaned ? `?${cleaned}` : ""}`, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const weekStart = useMemo(() => {
     const d = new Date(initialWeekStart + "T00:00:00");
@@ -178,6 +211,7 @@ export function SigningsView({
         sellerId: selectedSigning.sellerId,
         status: selectedSigning.status,
         notes: selectedSigning.notes,
+        saleId: selectedSigning.saleId ?? null,
       }
     : undefined;
 
@@ -292,30 +326,37 @@ export function SigningsView({
         />
       )}
 
-      {/* Create dialog (from empty slot click) */}
+      {/* Create dialog (from empty slot click or sale context) */}
       {canManage && (
         <SigningFormDialog
           open={createOpen}
           onOpenChange={(open) => {
             setCreateOpen(open);
-            if (!open) setCreateDefaults(null);
+            if (!open) {
+              setCreateDefaults(null);
+              setSaleDefaults(undefined);
+            }
           }}
           developments={developments}
           sellers={sellers}
           defaultValues={
-            createDefaults
+            createDefaults || saleDefaults
               ? {
                   id: "",
-                  date: createDefaults.date,
-                  time: createDefaults.time,
+                  date: createDefaults?.date ?? "",
+                  time: createDefaults?.time ?? "",
                   endTime: null,
-                  lotInfo: "",
-                  clientName: null,
-                  lotNumbers: null,
-                  developmentId: null,
-                  sellerId: null,
+                  lotInfo: saleDefaults?.lotInfo ?? "",
+                  clientName: saleDefaults?.clientName ?? null,
+                  lotNumbers: saleDefaults?.lotNumbers ?? null,
+                  developmentId: saleDefaults?.developmentId ?? null,
+                  sellerId: saleDefaults?.sellerId ?? null,
                   status: "PENDIENTE",
                   notes: null,
+                  saleId: saleDefaults?.saleId ?? null,
+                  saleLabel: saleDefaults
+                    ? `${saleDefaults.clientName} — ${saleDefaults.lotInfo}`
+                    : null,
                 }
               : undefined
           }

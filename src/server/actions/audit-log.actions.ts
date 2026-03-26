@@ -5,6 +5,38 @@ import { auth } from "@/lib/auth";
 import { auditLogModel } from "@/server/models/audit-log.model";
 
 /**
+ * logAction variant that auto-resolves userId from session.
+ * Used when calling from actions that don't have the userId handy.
+ */
+export async function logActionFromSession(
+  entity: string,
+  entityId: string,
+  action: string,
+  details?: { oldData?: unknown; newData?: unknown }
+) {
+  try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.warn("logActionFromSession: No session, skipping audit log");
+      return;
+    }
+
+    await auditLogModel.create({
+      userId,
+      entity,
+      entityId,
+      action,
+      oldData: details?.oldData ? (details.oldData as object) : undefined,
+      newData: details?.newData ? (details.newData as object) : undefined,
+    });
+  } catch (error) {
+    console.error("Error creating audit log:", error);
+  }
+}
+
+/**
  * List audit logs with optional filters.
  * Requires config:manage permission.
  */
@@ -34,44 +66,5 @@ export async function getAuditLogs(params?: {
   } catch (error) {
     console.error("Error fetching audit logs:", error);
     return [];
-  }
-}
-
-/**
- * Utility helper to create an audit log entry.
- * Can be called from any server action to log important operations.
- * If userId is not provided, it reads from the current session.
- */
-export async function logAction(
-  entity: string,
-  entityId: string,
-  action: string,
-  details?: { oldData?: unknown; newData?: unknown },
-  userId?: string
-) {
-  try {
-    let resolvedUserId = userId;
-
-    if (!resolvedUserId) {
-      const session = await auth();
-      resolvedUserId = session?.user?.id;
-    }
-
-    if (!resolvedUserId) {
-      console.warn("logAction: No userId available, skipping audit log");
-      return;
-    }
-
-    await auditLogModel.create({
-      userId: resolvedUserId,
-      entity,
-      entityId,
-      action,
-      oldData: details?.oldData ? (details.oldData as object) : undefined,
-      newData: details?.newData ? (details.newData as object) : undefined,
-    });
-  } catch (error) {
-    // Never let audit logging break the main operation
-    console.error("Error creating audit log:", error);
   }
 }

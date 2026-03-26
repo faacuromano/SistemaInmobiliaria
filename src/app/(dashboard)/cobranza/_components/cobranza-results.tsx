@@ -66,9 +66,10 @@ interface Props {
   results: PersonResult[];
   search: string;
   canManage: boolean;
+  bankAccounts?: Array<{ id: string; name: string }>;
 }
 
-export function CobranzaResults({ results, search, canManage }: Props) {
+export function CobranzaResults({ results, search, canManage, bankAccounts = [] }: Props) {
   const [payingInstallment, setPayingInstallment] = useState<InstallmentRow | null>(null);
   const [payingExtraCharge, setPayingExtraCharge] = useState<ExtraChargeRow | null>(null);
 
@@ -156,6 +157,7 @@ export function CobranzaResults({ results, search, canManage }: Props) {
             if (!open) setPayingInstallment(null);
           }}
           installment={payingInstallment}
+          bankAccounts={bankAccounts}
         />
       )}
 
@@ -166,6 +168,7 @@ export function CobranzaResults({ results, search, canManage }: Props) {
             if (!open) setPayingExtraCharge(null);
           }}
           extraCharge={payingExtraCharge}
+          bankAccounts={bankAccounts}
         />
       )}
     </div>
