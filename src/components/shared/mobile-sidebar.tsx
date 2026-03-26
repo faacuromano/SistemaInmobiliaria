@@ -35,7 +35,7 @@ export function MobileSidebar({
       </SheetTrigger>
       <SheetContent
         side="left"
-        className="w-56 p-0"
+        className="w-[260px] p-0 border-r-0 bg-[#1E4463] [&>button]:text-white/60 [&>button]:hover:text-white"
         showCloseButton={false}
       >
         <SheetTitle className="sr-only">Menu de navegacion</SheetTitle>
@@ -43,7 +43,7 @@ export function MobileSidebar({
           userRole={userRole}
           userName={userName}
           permissions={permissions}
-          className="w-full border-r-0"
+          className="w-full"
           onNavigate={() => setOpen(false)}
         />
       </SheetContent>
